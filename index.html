@@ -3,330 +3,194 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GreekCore Merch Portal</title>
+<title>Sturtee Merch Portal</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: 'DM Sans', sans-serif; background: #f1f3f5; color: #111827; font-size: 14px; }
-
-/* ── LAYOUT ── */
-.app { display: flex; height: 100vh; overflow: hidden; }
-.sidebar {
-  width: 230px; flex-shrink: 0;
-  background: #fff;
-  border-right: 1px solid #e5e7eb;
-  display: flex; flex-direction: column;
-  padding: 0;
-  overflow-y: auto;
-}
-.main-content { flex: 1; overflow-y: auto; padding: 32px 36px; }
-.top-bar {
-  background: #f8f9fa;
-  border-bottom: 1px solid #dee2e6;
-  padding: 8px 20px;
-  font-size: 12px;
-  color: #9ca3af;
-  letter-spacing: 0.02em;
-}
-
-/* ── SIDEBAR ── */
-.sidebar-brand { padding: 20px 20px 12px; border-bottom: 1px solid #f3f4f6; }
-.sidebar-brand h2 { font-size: 16px; font-weight: 700; color: #111827; }
-.sidebar-brand p { font-size: 11px; color: #9ca3af; margin-top: 2px; }
-.sidebar-user { padding: 14px 16px; border-bottom: 1px solid #f3f4f6; display: flex; align-items: center; gap: 10px; }
-.avatar { width: 32px; height: 32px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; color: #6b7280; flex-shrink: 0; }
-.user-info { flex: 1; min-width: 0; }
-.user-name { font-size: 13px; font-weight: 600; color: #111827; }
-.role-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px; margin-top: 3px; text-transform: lowercase; }
-.badge-admin { background: #fee2e2; color: #dc2626; }
-.badge-sales { background: #dbeafe; color: #2563eb; }
-.badge-head-designer { background: #ede9fe; color: #7c3aed; }
-.badge-fulfillment { background: #dcfce7; color: #16a34a; }
-.badge-super-admin { background: #111827; color: #fff; }
-.nav { padding: 12px 0; flex: 1; }
-.nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 20px;
-  font-size: 13.5px; color: #4b5563; cursor: pointer;
-  border-radius: 0;
-  transition: background 0.15s, color 0.15s;
-  position: relative;
-}
-.nav-item:hover { background: #f9fafb; color: #111827; }
-.nav-item.active { background: #f3f4f6; color: #111827; font-weight: 500; }
-.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.7; }
-.nav-item.active svg { opacity: 1; }
-.sidebar-footer { padding: 12px 0; border-top: 1px solid #f3f4f6; }
-.sign-out { display: flex; align-items: center; gap: 10px; padding: 9px 20px; font-size: 13px; color: #6b7280; cursor: pointer; }
-.sign-out:hover { color: #111827; }
-
-/* ── LOGIN ── */
-.login-page { min-height: 100vh; background: #f1f3f5; display: flex; flex-direction: column; }
-.login-topbar { padding: 10px 20px; font-size: 12px; color: #9ca3af; }
-.login-topbar a { color: #3b82f6; text-decoration: none; }
-.login-wrap { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 20px; }
-.login-inner { width: 100%; max-width: 420px; }
-.login-logo { display: flex; flex-direction: column; align-items: center; margin-bottom: 24px; }
-.logo-icon { width: 52px; height: 52px; background: #111827; border-radius: 14px; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-.login-inner h1 { font-size: 22px; font-weight: 700; text-align: center; }
-.login-inner .subtitle { font-size: 13px; color: #6b7280; text-align: center; margin-top: 4px; }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
-.card h3 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-.card .card-sub { font-size: 12px; color: #6b7280; margin-bottom: 20px; }
-.form-group { margin-bottom: 16px; }
-.form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: #111827; }
-.form-input {
-  width: 100%; padding: 10px 12px;
-  border: 1px solid #e5e7eb; border-radius: 8px;
-  font-size: 13px; font-family: inherit;
-  background: #f9fafb; color: #111827;
-  outline: none; transition: border 0.15s;
-}
-.form-input:focus { border-color: #3b82f6; background: #fff; }
-.btn-primary {
-  width: 100%; padding: 11px;
-  background: #111827; color: #fff;
-  border: none; border-radius: 8px;
-  font-size: 14px; font-weight: 600;
-  cursor: pointer; font-family: inherit;
-  transition: background 0.15s;
-}
-.btn-primary:hover { background: #1f2937; }
-.demo-accounts { display: flex; flex-direction: column; gap: 6px; }
-.demo-account {
-  display: flex; align-items: center; gap: 12px;
-  padding: 10px 14px; border: 1px solid #e5e7eb;
-  border-radius: 8px; cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-.demo-account:hover { background: #f9fafb; border-color: #d1d5db; }
-.demo-avatar { width: 30px; height: 30px; border-radius: 50%; background: #e5e7eb; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #6b7280; flex-shrink: 0; }
-.demo-info { flex: 1; }
-.demo-info strong { font-size: 13px; font-weight: 600; display: block; }
-.demo-info span { font-size: 11px; color: #9ca3af; }
-.login-footer { text-align: center; font-size: 11px; color: #9ca3af; padding: 16px; }
-
-/* ── PAGE HEADER ── */
-.page-header { margin-bottom: 28px; }
-.page-header h1 { font-size: 22px; font-weight: 700; color: #111827; }
-.page-header p { font-size: 13px; color: #6b7280; margin-top: 3px; }
-
-/* ── STAT CARDS ── */
-.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-.stat-card {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 10px; padding: 18px 20px;
-  display: flex; align-items: flex-start; gap: 14px;
-}
-.stat-bar { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; margin-top: 2px; }
-.stat-num { font-size: 28px; font-weight: 700; line-height: 1; color: #111827; }
-.stat-label { font-size: 12px; color: #6b7280; margin-top: 4px; }
-
-/* ── QUICK ACTIONS ── */
-.quick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.quick-card {
-  background: #fff; border: 1px solid #e5e7eb;
-  border-radius: 10px; padding: 16px 18px;
-  display: flex; align-items: center; gap: 14px;
-  cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s;
-}
-.quick-card:hover { border-color: #d1d5db; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-.quick-icon { width: 36px; height: 36px; border-radius: 8px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.quick-icon svg { width: 18px; height: 18px; color: #4b5563; }
-.quick-info strong { font-size: 14px; font-weight: 600; display: block; }
-.quick-info span { font-size: 12px; color: #9ca3af; }
-
-/* ── RECENT ACTIVITY ── */
-.section-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px 24px; }
-.section-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-.section-sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
-.activity-item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #f3f4f6; }
-.activity-item:last-child { border-bottom: none; }
-.activity-icon { width: 30px; height: 30px; border-radius: 8px; background: #f3f4f6; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.activity-icon svg { width: 15px; height: 15px; color: #9ca3af; }
-.activity-info { flex: 1; }
-.activity-info strong { font-size: 13px; font-weight: 500; }
-.activity-info span { font-size: 11px; color: #9ca3af; display: block; margin-top: 1px; }
-.status-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 6px; border: 1px solid #e5e7eb; white-space: nowrap; }
-.pill-pending { border-color: #e5e7eb; color: #6b7280; background: #fff; }
-.pill-progress { border-color: #e5e7eb; color: #6b7280; background: #fff; }
-.pill-approved { background: #111827; color: #fff; border-color: #111827; }
-.pill-shipped { background: #111827; color: #fff; border-color: #111827; }
-.pill-pending-approval { background: #fef3c7; color: #d97706; border-color: #fde68a; }
-.pill-in-progress { background: #dbeafe; color: #2563eb; border-color: #bfdbfe; }
-.pill-completed { background: #dcfce7; color: #16a34a; border-color: #bbf7d0; }
-.pill-revision { background: #fed7aa; color: #c2410c; border-color: #fdba74; }
-.pill-rush { background: #fee2e2; color: #dc2626; border-color: #fecaca; font-size: 10px; }
-.pill-production { background: #dbeafe; color: #2563eb; border-color: #bfdbfe; }
-.pill-ready { background: #fef3c7; color: #d97706; border-color: #fde68a; }
-.pill-transit { background: #ede9fe; color: #7c3aed; border-color: #ddd6fe; }
-.pill-delivered { background: #dcfce7; color: #16a34a; border-color: #bbf7d0; }
-.pill-inactive { background: #f3f4f6; color: #6b7280; border-color: #e5e7eb; }
-
-/* ── TABS ── */
-.tab-bar { display: flex; background: #f3f4f6; border-radius: 8px; padding: 3px; margin-bottom: 20px; width: fit-content; }
-.tab { padding: 7px 18px; border-radius: 6px; font-size: 13px; cursor: pointer; color: #6b7280; transition: all 0.15s; white-space: nowrap; }
-.tab.active { background: #fff; color: #111827; font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-
-/* ── DESIGN QUEUE CARDS ── */
-.design-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-.design-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
-.design-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 4px; }
-.design-card-header h3 { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.design-card-sub { font-size: 12px; color: #6b7280; margin-bottom: 16px; }
-.design-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 20px; margin-bottom: 14px; }
-.meta-item label { font-size: 11px; color: #9ca3af; display: block; margin-bottom: 2px; }
-.meta-item span { font-size: 13px; font-weight: 500; }
-.notes-box { background: #f9fafb; border-radius: 6px; padding: 10px 12px; font-size: 12px; color: #6b7280; margin-bottom: 14px; }
-.notes-box label { display: block; font-size: 11px; color: #9ca3af; margin-bottom: 4px; }
-.btn-dark { width: 100%; padding: 10px; background: #111827; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.btn-dark:hover { background: #1f2937; }
-.btn-outline { width: 100%; padding: 10px; background: #fff; color: #111827; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 6px; }
-.btn-outline:hover { background: #f9fafb; }
-.btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-/* ── APPROVAL CARDS ── */
-.approval-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; }
-.approval-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
-.mockup-thumbs { display: flex; gap: 8px; margin: 14px 0; flex-wrap: wrap; }
-.mockup-thumb { width: 68px; height: 68px; border: 1px solid #e5e7eb; border-radius: 8px; background: #f9fafb; display: flex; align-items: center; justify-content: center; }
-.mockup-thumb svg { width: 22px; height: 22px; color: #d1d5db; }
-.comments-box { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin: 12px 0; }
-.comment-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
-.comment-author { font-size: 12px; font-weight: 600; }
-.comment-date { font-size: 11px; color: #9ca3af; }
-.comment-text { font-size: 12px; color: #6b7280; }
-
-/* ── FULFILLMENT ── */
-.fulfillment-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
-.fulfillment-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
-.address-box { background: #f9fafb; border-radius: 6px; padding: 10px 12px; margin: 12px 0; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; color: #374151; }
-.special-box { background: #fff8f0; border: 1px solid #fed7aa; border-radius: 6px; padding: 10px 12px; margin: 10px 0; font-size: 12px; color: #92400e; }
-.special-box label { display: block; font-size: 11px; color: #d97706; margin-bottom: 3px; font-weight: 600; }
-
-/* ── STOREFRONT ── */
-.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-.product-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 20px; }
-.product-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2px; }
-.product-name { font-size: 15px; font-weight: 600; }
-.product-price { font-size: 14px; font-weight: 600; }
-.product-category { font-size: 12px; color: #9ca3af; margin-bottom: 10px; }
-.product-desc { font-size: 12px; color: #6b7280; margin-bottom: 12px; line-height: 1.5; }
-.product-price-label { font-size: 10px; color: #9ca3af; display: block; }
-.chapter-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-.chapter-tag { font-size: 11px; padding: 2px 8px; background: #f3f4f6; border-radius: 4px; color: #374151; }
-
-/* ── ADMIN PANEL ── */
-.flag-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.flag-card { background: #fff; border: 1px solid #fecaca; border-radius: 10px; padding: 16px 18px; display: flex; align-items: flex-start; gap: 14px; }
-.flag-bar { width: 4px; height: 36px; border-radius: 2px; flex-shrink: 0; }
-.flag-num { font-size: 24px; font-weight: 700; line-height: 1; }
-.flag-label { font-size: 12px; color: #6b7280; margin-top: 3px; }
-.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.override-item { padding: 14px 0; border-bottom: 1px solid #f3f4f6; }
-.override-item:last-child { border-bottom: none; }
-.override-tags { display: flex; gap: 6px; margin-bottom: 6px; }
-.override-tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600; }
-.tag-price { background: #dbeafe; color: #2563eb; }
-.tag-margin { background: #fee2e2; color: #dc2626; }
-.tag-commission { background: #d1fae5; color: #059669; }
-.tag-pending { background: #fef3c7; color: #d97706; }
-.override-who { font-size: 12px; font-weight: 500; margin-bottom: 2px; }
-.override-reason { font-size: 11px; color: #9ca3af; }
-.override-time { font-size: 11px; color: #9ca3af; }
-.approve-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
-.metric-card { background: #f9fafb; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-.metric-label { font-size: 12px; color: #6b7280; }
-.metric-val { font-size: 22px; font-weight: 700; }
-.metric-change { font-size: 11px; color: #16a34a; margin-top: 2px; }
-.metric-icon { width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; }
-
-/* ── QUOTE REQUEST ── */
-.form-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 28px; max-width: 700px; }
-.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-.form-section { margin-bottom: 24px; }
-.form-section-title { font-size: 13px; font-weight: 600; color: #111827; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid #f3f4f6; }
-.form-select { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f9fafb; color: #111827; outline: none; }
-.form-textarea { width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 8px; font-size: 13px; font-family: inherit; background: #f9fafb; color: #111827; outline: none; resize: vertical; min-height: 80px; }
-
-/* ── PAGE TRANSITIONS ── */
-.page { display: none; }
-.page.active { display: block; animation: fadeUp 0.2s ease; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
-
-/* ── HEADER BAR ── */
-.header-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
-.btn-sm-dark { padding: 8px 16px; background: #111827; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 6px; }
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#0f75bc;font-size:14px}
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;overflow-y:auto}
+.main-content{flex:1;overflow-y:auto;padding:32px 36px}
+.top-bar{background:#f8f9fa;border-bottom:1px solid #dee2e6;padding:8px 20px;font-size:12px;color:#9ca3af}
+.sidebar-brand{padding:20px 20px 12px;border-bottom:1px solid #f3f4f6}
+.sidebar-brand h2{font-size:16px;font-weight:700;color:#0f75bc}
+.sidebar-brand p{font-size:11px;color:#9ca3af;margin-top:2px}
+.sidebar-user{padding:14px 16px;border-bottom:1px solid #f3f4f6;display:flex;align-items:center;gap:10px}
+.avatar{width:32px;height:32px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#6b7280;flex-shrink:0}
+.user-name{font-size:13px;font-weight:600;color:#0f75bc}
+.role-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;margin-top:3px;text-transform:lowercase}
+.badge-admin{background:#fee2e2;color:#dc2626}
+.badge-sales_rep{background:#dbeafe;color:#2563eb}
+.badge-designer{background:#ede9fe;color:#7c3aed}
+.badge-fulfillment{background:#dcfce7;color:#16a34a}
+.badge-super_admin{background:#0f75bc;color:#fff}
+.nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13.5px;color:#4b5563;cursor:pointer;transition:background .15s}
+.nav-item:hover{background:#f9fafb;color:#0f75bc}
+.nav-item.active{background:#f3f4f6;color:#0f75bc;font-weight:500}
+.nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+.sidebar-footer{padding:12px 0;border-top:1px solid #f3f4f6}
+.sign-out{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:#6b7280;cursor:pointer}
+.sign-out:hover{color:#0f75bc}
+.login-page{min-height:100vh;background:#f1f3f5;display:flex;flex-direction:column}
+.login-topbar{padding:10px 20px;font-size:12px;color:#9ca3af}
+.login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+.login-inner{width:100%;max-width:420px}
+.login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
+.logo-icon{width:52px;height:52px;background:#0f75bc;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.login-inner h1{font-size:22px;font-weight:700;text-align:center}
+.subtitle{font-size:13px;color:#6b7280;text-align:center;margin-top:4px}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:16px}
+.card h3{font-size:16px;font-weight:600;margin-bottom:4px}
+.card-sub{font-size:12px;color:#6b7280;margin-bottom:20px}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px}
+.form-input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#0f75bc;outline:none;transition:border .15s}
+.form-input:focus{border-color:#3b82f6;background:#fff}
+.btn-primary{width:100%;padding:11px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-primary:hover{background:#0d69a8}
+.btn-primary:disabled{background:#9ca3af;cursor:not-allowed}
+.demo-account{display:flex;align-items:center;gap:12px;padding:10px 14px;border:1px solid #e5e7eb;border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:6px}
+.demo-account:hover{background:#f9fafb}
+.demo-avatar{width:30px;height:30px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#6b7280;flex-shrink:0}
+.demo-info strong{font-size:13px;font-weight:600;display:block}
+.demo-info span{font-size:11px;color:#9ca3af}
+.login-footer{text-align:center;font-size:11px;color:#9ca3af;padding:16px}
+.error-msg{background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.success-msg{background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:#f1f3f5;flex-direction:column;gap:12px}
+.spinner{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#0f75bc;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.page-header{margin-bottom:28px}
+.page-header h1{font-size:22px;font-weight:700}
+.page-header p{font-size:13px;color:#6b7280;margin-top:3px}
+.header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:18px 20px;display:flex;align-items:flex-start;gap:14px}
+.stat-bar{width:4px;height:40px;border-radius:2px;flex-shrink:0;margin-top:2px}
+.stat-num{font-size:28px;font-weight:700;line-height:1}
+.stat-label{font-size:12px;color:#6b7280;margin-top:4px}
+.quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
+.quick-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.quick-card:hover{border-color:#d1d5db;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.quick-icon{width:36px;height:36px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.quick-icon svg{width:18px;height:18px}
+.quick-info strong{font-size:14px;font-weight:600;display:block}
+.quick-info span{font-size:12px;color:#9ca3af}
+.section-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;margin-bottom:16px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.section-sub{font-size:12px;color:#6b7280;margin-bottom:16px}
+.activity-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid #f3f4f6}
+.activity-item:last-child{border-bottom:none}
+.activity-icon{width:30px;height:30px;border-radius:8px;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.activity-info{flex:1}
+.activity-info strong{font-size:13px;font-weight:500}
+.activity-info span{font-size:11px;color:#9ca3af;display:block;margin-top:1px}
+.status-pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;border:1px solid #e5e7eb;white-space:nowrap}
+.pill-pending,.pill-intake{border-color:#e5e7eb;color:#6b7280;background:#fff}
+.pill-approved{background:#0f75bc;color:#fff;border-color:#0f75bc}
+.pill-shipped{background:#0f75bc;color:#fff;border-color:#0f75bc}
+.pill-pending-approval{background:#fef3c7;color:#d97706;border-color:#fde68a}
+.pill-in-progress,.pill-design{background:#dbeafe;color:#2563eb;border-color:#bfdbfe}
+.pill-completed,.pill-complete{background:#dcfce7;color:#16a34a;border-color:#bbf7d0}
+.pill-revision{background:#fed7aa;color:#c2410c;border-color:#fdba74}
+.pill-rush{background:#fee2e2;color:#dc2626;border-color:#fecaca;font-size:10px}
+.pill-production{background:#dbeafe;color:#2563eb;border-color:#bfdbfe}
+.pill-fulfillment,.pill-ready{background:#fef3c7;color:#d97706;border-color:#fde68a}
+.pill-transit{background:#ede9fe;color:#7c3aed;border-color:#ddd6fe}
+.pill-inactive{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
+.pill-quote{background:#ede9fe;color:#7c3aed;border-color:#ddd6fe}
+.tab-bar{display:flex;background:#f3f4f6;border-radius:8px;padding:3px;margin-bottom:20px;width:fit-content}
+.tab{padding:7px 18px;border-radius:6px;font-size:13px;cursor:pointer;color:#6b7280;transition:all .15s;white-space:nowrap}
+.tab.active{background:#fff;color:#0f75bc;font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+.design-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.design-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px}
+.design-card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
+.design-card-header h3{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.design-card-sub{font-size:12px;color:#6b7280;margin-bottom:16px}
+.design-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:14px}
+.meta-item label{font-size:11px;color:#9ca3af;display:block;margin-bottom:2px}
+.meta-item span{font-size:13px;font-weight:500}
+.notes-box{background:#f9fafb;border-radius:6px;padding:10px 12px;font-size:12px;color:#6b7280;margin-bottom:14px}
+.notes-box label{display:block;font-size:11px;color:#9ca3af;margin-bottom:4px}
+.btn-dark{width:100%;padding:10px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+.btn-dark:hover{background:#0d69a8}
+.btn-outline{width:100%;padding:10px;background:#fff;color:#0f75bc;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+.btn-outline:hover{background:#f9fafb}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-sm-dark{padding:8px 16px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.form-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:28px;max-width:700px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-section{margin-bottom:24px}
+.form-section-title{font-size:13px;font-weight:600;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f3f4f6}
+.form-select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#0f75bc;outline:none}
+.form-textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#0f75bc;outline:none;resize:vertical;min-height:80px}
+.approval-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:16px}
+.mockup-thumbs{display:flex;gap:8px;margin:14px 0;flex-wrap:wrap}
+.mockup-thumb{width:68px;height:68px;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;display:flex;align-items:center;justify-content:center}
+.fulfillment-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.special-box{background:#fff8f0;border:1px solid #fed7aa;border-radius:6px;padding:10px 12px;margin:10px 0;font-size:12px;color:#92400e}
+.product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.product-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px}
+.chapter-tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.chapter-tag{font-size:11px;padding:2px 8px;background:#f3f4f6;border-radius:4px;color:#374151}
+.flag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px}
+.flag-card{background:#fff;border:1px solid #fecaca;border-radius:10px;padding:16px 18px;display:flex;align-items:flex-start;gap:14px}
+.flag-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0}
+.flag-num{font-size:24px;font-weight:700;line-height:1}
+.flag-label{font-size:12px;color:#6b7280;margin-top:3px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.metric-card{background:#f9fafb;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
+.metric-val{font-size:22px;font-weight:700}
+.metric-label{font-size:12px;color:#6b7280}
+.page{animation:fadeUp .2s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.order-num{font-family:monospace;font-size:12px;color:#6b7280}
+@media(max-width:700px){.two-col,.form-row{grid-template-columns:1fr}.sidebar{width:200px}.main-content{padding:20px 16px}}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════ LOGIN ═══════════════════════════════════ -->
-<div id="loginPage" class="login-page">
-  <div class="login-topbar">GreekCore Merchandise Workflow System</div>
+<div id="loadingScreen" class="loading-screen">
+  <div class="spinner"></div>
+  <div style="font-size:13px;color:#9ca3af">Loading Sturtee...</div>
+</div>
+
+<div id="loginPage" class="login-page" style="display:none">
+  <div class="login-topbar">Sturtee Merchandise Workflow System</div>
   <div class="login-wrap">
     <div class="login-inner">
       <div class="login-logo">
         <div class="logo-icon">
           <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
-        <h1>GreekCore Merch Portal</h1>
+        <h1>Sturtee Merch Portal</h1>
         <p class="subtitle">Sign in to access the workflow system</p>
       </div>
-
       <div class="card">
         <h3>Sign In</h3>
         <p class="card-sub">Enter your credentials to continue</p>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" class="form-input" placeholder="you@greekcore.com" id="loginEmail">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" class="form-input" placeholder="Enter password" id="loginPassword">
-        </div>
-        <button class="btn-primary" onclick="handleLogin()">Sign In</button>
+        <div id="loginError" class="error-msg"></div>
+        <div id="loginSuccess" class="success-msg"></div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-input" id="loginEmail" placeholder="you@sturtee.com"></div>
+        <div class="form-group"><label>Password</label><input type="password" class="form-input" id="loginPassword" placeholder="Enter password" onkeydown="if(event.key==='Enter')handleLogin()"></div>
+        <button class="btn-primary" id="loginBtn" onclick="handleLogin()">Sign In</button>
       </div>
-
-      <div class="card">
-        <h3>Demo Accounts</h3>
-        <p class="card-sub">Quick login for prototype testing</p>
-        <div class="demo-accounts">
-          <div class="demo-account" onclick="loginAs('admin')">
-            <div class="demo-avatar">A</div>
-            <div class="demo-info"><strong>Admin – Grant</strong><span>grant@greekcore.com</span></div>
-          </div>
-          <div class="demo-account" onclick="loginAs('sales')">
-            <div class="demo-avatar">S</div>
-            <div class="demo-info"><strong>Sales Rep – Sarah</strong><span>sales@greekcore.com</span></div>
-          </div>
-          <div class="demo-account" onclick="loginAs('designer')">
-            <div class="demo-avatar">D</div>
-            <div class="demo-info"><strong>Head Designer – Mike</strong><span>design@greekcore.com</span></div>
-          </div>
-          <div class="demo-account" onclick="loginAs('fulfillment')">
-            <div class="demo-avatar">F</div>
-            <div class="demo-info"><strong>Fulfillment Head – Zindler</strong><span>fulfillment@greekcore.com</span></div>
-          </div>
-        </div>
-      </div>
-      <div class="login-footer">Prototype Environment • v1.0</div>
+      <div class="login-footer">Sturtee Merch Portal · v1.0</div>
     </div>
   </div>
 </div>
 
-<!-- ═══════════════════════════════════ APP SHELL ═══════════════════════════════════ -->
 <div id="appShell" class="app" style="display:none">
   <div class="sidebar">
-    <div class="sidebar-brand">
-      <h2>GreekCore Merch</h2>
-      <p>Workflow Portal</p>
-    </div>
+    <div class="sidebar-brand"><h2>Sturtee Merch</h2><p>Workflow Portal</p></div>
     <div class="sidebar-user">
-      <div class="avatar" id="sidebarAvatar">G</div>
+      <div class="avatar" id="sidebarAvatar">?</div>
       <div class="user-info">
-        <div class="user-name" id="sidebarName">Grant (Admin)</div>
-        <span class="role-badge" id="sidebarBadge">admin</span>
+        <div class="user-name" id="sidebarName">Loading...</div>
+        <span class="role-badge" id="sidebarBadge">...</span>
       </div>
     </div>
     <nav class="nav" id="sidebarNav"></nav>
@@ -337,577 +201,461 @@ body { font-family: 'DM Sans', sans-serif; background: #f1f3f5; color: #111827; 
       </div>
     </div>
   </div>
-
-  <div style="flex:1; display:flex; flex-direction:column; overflow:hidden;">
+  <div style="flex:1;display:flex;flex-direction:column;overflow:hidden">
     <div class="top-bar">Merchandise Workflow System</div>
-    <div class="main-content" id="mainContent">
-      <!-- pages injected here -->
-    </div>
+    <div class="main-content" id="mainContent"></div>
   </div>
 </div>
 
 <script>
-// ════════════════════ STATE ════════════════════
-const USERS = {
-  admin:       { name: 'Grant (Admin)',           short: 'G', role: 'admin',        badge: 'badge-admin',        badgeText: 'admin' },
-  sales:       { name: 'Sarah (Sales Rep)',        short: 'S', role: 'sales',        badge: 'badge-sales',        badgeText: 'sales' },
-  designer:    { name: 'Mike (Head Designer)',     short: 'M', role: 'head-designer',badge: 'badge-head-designer',badgeText: 'head designer' },
-  fulfillment: { name: 'Zindler (Fulfillment Hea)',short: 'Z', role: 'fulfillment',  badge: 'badge-fulfillment',  badgeText: 'fulfillment' },
+const SUPABASE_URL='https://xtgtihetywvytwqiyriw.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0Z3RpaGV0eXd2eXR3cWl5cml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NDUyMDIsImV4cCI6MjA4NzAyMTIwMn0.YPRcqWz7uFR-WybGnK6HcZ_v-EYCeedDgLJB4_4iQUU';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let currentUser=null,currentProfile=null,currentPage='dashboard';
+
+const NAV_BY_ROLE={
+  super_admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel'],
+  admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel'],
+  sales_rep:['dashboard','quote-request','approvals','storefront'],
+  designer:['dashboard','design-queue','approvals'],
+  fulfillment:['dashboard','fulfillment']
+};
+const NAV={
+  'dashboard':{label:'Dashboard',icon:'<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M2 12H4M20 12h2M6.34 5.34L4.93 3.93M18.66 18.66l1.41 1.41M12 2v2M12 20v2"/>'},
+  'quote-request':{label:'Quote Request',icon:'<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>'},
+  'design-queue':{label:'Design Queue',icon:'<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>'},
+  'approvals':{label:'Approvals',icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>'},
+  'fulfillment':{label:'Fulfillment',icon:'<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>'},
+  'storefront':{label:'Storefront',icon:'<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>'},
+  'admin-panel':{label:'Admin',icon:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>'}
 };
 
-const NAV_BY_ROLE = {
-  admin: ['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel'],
-  sales: ['dashboard','quote-request','approvals','storefront'],
-  'head-designer': ['dashboard','design-queue','approvals'],
-  fulfillment: ['dashboard','fulfillment'],
-};
-
-const NAV_LABELS = {
-  'dashboard':     { label: 'Dashboard',      icon: '<circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M5.34 18.66l-1.41 1.41M2 12H4M20 12h2M6.34 5.34L4.93 3.93M18.66 18.66l1.41 1.41M12 2v2M12 20v2"/>' },
-  'quote-request': { label: 'Quote Request',  icon: '<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>' },
-  'design-queue':  { label: 'Design Queue',   icon: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>' },
-  'approvals':     { label: 'Approvals',      icon: '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>' },
-  'fulfillment':   { label: 'Fulfillment',    icon: '<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>' },
-  'storefront':    { label: 'Storefront',     icon: '<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>' },
-  'admin-panel':   { label: 'Admin',          icon: '<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>' },
-};
-
-let currentUser = null;
-let currentPage = 'dashboard';
-
-// ════════════════════ AUTH ════════════════════
-function handleLogin() {
-  const email = document.getElementById('loginEmail').value;
-  if (email.includes('grant')) loginAs('admin');
-  else if (email.includes('sales')) loginAs('sales');
-  else if (email.includes('design')) loginAs('designer');
-  else if (email.includes('fulfill')) loginAs('fulfillment');
-  else loginAs('admin');
+async function boot(){
+  const{data:{session}}=await sb.auth.getSession();
+  if(session)await loadProfile(session.user);
+  else showLogin();
 }
 
-function loginAs(role) {
-  currentUser = USERS[role];
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('appShell').style.display = 'flex';
-  document.getElementById('sidebarAvatar').textContent = currentUser.short;
-  document.getElementById('sidebarName').textContent = currentUser.name;
-  const badge = document.getElementById('sidebarBadge');
-  badge.textContent = currentUser.badgeText;
-  badge.className = 'role-badge ' + currentUser.badge;
-  buildNav();
+async function loadProfile(user){
+  currentUser=user;
+  const{data:profile}=await sb.from('users').select('*').eq('id',user.id).single();
+  if(!profile){
+    const{data:np}=await sb.from('users').insert({id:user.id,email:user.email,full_name:user.user_metadata?.full_name||user.email.split('@')[0],role:'admin'}).select().single();
+    currentProfile=np;
+  }else{currentProfile=profile;}
+  showApp();
+}
+
+function showLogin(){
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('loginPage').style.display='flex';
+  document.getElementById('appShell').style.display='none';
+}
+
+function showApp(){
+  document.getElementById('loadingScreen').style.display='none';
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('appShell').style.display='flex';
+  const name=currentProfile?.full_name||currentUser.email;
+  const role=currentProfile?.role||'admin';
+  document.getElementById('sidebarAvatar').textContent=name.charAt(0).toUpperCase();
+  document.getElementById('sidebarName').textContent=name;
+  const badge=document.getElementById('sidebarBadge');
+  badge.textContent=role.replace('_',' ');
+  badge.className='role-badge badge-'+role;
+  buildNav(role);
   navigate('dashboard');
 }
 
-function signOut() {
-  currentUser = null;
-  document.getElementById('appShell').style.display = 'none';
-  document.getElementById('loginPage').style.display = 'flex';
+async function handleLogin(){
+  const email=document.getElementById('loginEmail').value.trim();
+  const password=document.getElementById('loginPassword').value;
+  const errEl=document.getElementById('loginError');
+  const btn=document.getElementById('loginBtn');
+  if(!email||!password){showErr(errEl,'Please enter email and password');return;}
+  btn.disabled=true;btn.textContent='Signing in...';
+  const{data,error}=await sb.auth.signInWithPassword({email,password});
+  btn.disabled=false;btn.textContent='Sign In';
+  if(error){showErr(errEl,error.message);return;}
+  errEl.style.display='none';
+  await loadProfile(data.user);
 }
 
-// ════════════════════ NAV ════════════════════
-function buildNav() {
-  const nav = document.getElementById('sidebarNav');
-  const pages = NAV_BY_ROLE[currentUser.role] || ['dashboard'];
-  nav.innerHTML = pages.map(p => {
-    const info = NAV_LABELS[p];
-    return `<div class="nav-item" id="nav-${p}" onclick="navigate('${p}')">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${info.icon}</svg>
-      ${info.label}
-    </div>`;
-  }).join('');
+
+  if(password.length<6){showErr(errEl,'Password must be at least 6 characters');return;}
+  const{error}=await sb.auth.signUp({email,password,options:{data:{full_name:name}}});
+  if(error){showErr(errEl,error.message);return;}
+  errEl.style.display='none';
+  const s=document.getElementById('loginSuccess');
+  s.textContent='Account created! Check your email to confirm, then sign in.';
+  s.style.display='block';
 }
 
-function navigate(page) {
-  currentPage = page;
-  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-  const navEl = document.getElementById('nav-' + page);
-  if (navEl) navEl.classList.add('active');
-  renderPage(page);
+async function signOut(){
+  await sb.auth.signOut();
+  currentUser=null;currentProfile=null;
+  showLogin();
 }
 
-// ════════════════════ PAGES ════════════════════
-function renderPage(page) {
-  const main = document.getElementById('mainContent');
-  const renders = { dashboard, 'quote-request': quoteRequest, 'design-queue': designQueue, approvals, fulfillment, storefront, 'admin-panel': adminPanel };
-  main.innerHTML = (renders[page] || dashboard)();
+function showErr(el,msg){el.textContent=msg;el.style.display='block';}
+
+function buildNav(role){
+  const pages=NAV_BY_ROLE[role]||['dashboard'];
+  document.getElementById('sidebarNav').innerHTML=pages.map(p=>`<div class="nav-item" id="nav-${p}" onclick="navigate('${p}')"><svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${NAV[p].icon}</svg>${NAV[p].label}</div>`).join('');
+}
+
+function navigate(page){
+  currentPage=page;
+  document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
+  const el=document.getElementById('nav-'+page);
+  if(el)el.classList.add('active');
+  const renders={dashboard:renderDashboard,'quote-request':renderQuoteRequest,'design-queue':renderDesignQueue,approvals:renderApprovals,fulfillment:renderFulfillment,storefront:renderStorefront,'admin-panel':renderAdminPanel};
+  (renders[page]||renderDashboard)();
+}
+
+function setTab(c,el){
+  if(typeof c==='string')c=document.getElementById(c);
+  c.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function timeAgo(d){
+  const diff=Date.now()-new Date(d).getTime();
+  const m=Math.floor(diff/60000);
+  if(m<60)return m+'m ago';
+  const h=Math.floor(m/60);
+  if(h<24)return h+'h ago';
+  return Math.floor(h/24)+'d ago';
+}
+
+async function updateOrderStatus(id,status){
+  const{error}=await sb.from('orders').update({status,updated_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  navigate(currentPage);
 }
 
 // ── DASHBOARD ──
-function dashboard() {
-  const role = currentUser.role;
-  return `
-  <div class="page active">
-    <div class="page-header">
-      <h1>Merchandise Workflow</h1>
-      <p>Monitor and manage all orders across the pipeline</p>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-bar" style="background:#3b82f6"></div><div><div class="stat-num">12</div><div class="stat-label">Pending Quotes</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#8b5cf6"></div><div><div class="stat-num">8</div><div class="stat-label">In Design</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#f59e0b"></div><div><div class="stat-num">5</div><div class="stat-label">Awaiting Approval</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#22c55e"></div><div><div class="stat-num">3</div><div class="stat-label">Ready to Fulfill</div></div></div>
-    </div>
+async function renderDashboard(){
+  const main=document.getElementById('mainContent');
+  main.innerHTML=`<div class="page">
+    <div class="page-header"><h1>Merchandise Workflow</h1><p>Monitor and manage all orders across the pipeline</p></div>
+    <div class="stat-grid" id="dashStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>
     <div class="quick-grid">
-      <div class="quick-card" onclick="navigate('quote-request')">
-        <div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
-        <div class="quick-info"><strong>New Quote</strong><span>Create quote request</span></div>
-      </div>
-      <div class="quick-card" onclick="navigate('design-queue')">
-        <div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></div>
-        <div class="quick-info"><strong>Design Queue</strong><span>View pending designs</span></div>
-      </div>
-      <div class="quick-card" onclick="navigate('approvals')">
-        <div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div>
-        <div class="quick-info"><strong>Approvals</strong><span>Review submissions</span></div>
-      </div>
-      <div class="quick-card" onclick="navigate('fulfillment')">
-        <div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></div>
-        <div class="quick-info"><strong>Fulfillment</strong><span>Track shipments</span></div>
-      </div>
-      <div class="quick-card" onclick="navigate('storefront')">
-        <div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div>
-        <div class="quick-info"><strong>Storefront</strong><span>Manage products</span></div>
-      </div>
+      <div class="quick-card" onclick="navigate('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#4b5563" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Create quote request</span></div></div>
+      <div class="quick-card" onclick="navigate('design-queue')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#4b5563" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>View pending designs</span></div></div>
+      <div class="quick-card" onclick="navigate('approvals')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#4b5563" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg></div><div class="quick-info"><strong>Approvals</strong><span>Review submissions</span></div></div>
+      <div class="quick-card" onclick="navigate('fulfillment')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#4b5563" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg></div><div class="quick-info"><strong>Fulfillment</strong><span>Track shipments</span></div></div>
+      <div class="quick-card" onclick="navigate('storefront')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#4b5563" stroke-width="2"><path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg></div><div class="quick-info"><strong>Storefront</strong><span>Manage products</span></div></div>
     </div>
     <div class="section-card">
-      <div class="section-title">Recent Activity</div>
-      <div class="section-sub">Latest updates across all workflows</div>
-      ${activityRow('doc','Sigma Chi Bid Day Shirts','2 hours ago','pending','pill-pending')}
-      ${activityRow('palette','Kappa Delta Spring Formal','4 hours ago','in progress','pill-progress')}
-      ${activityRow('check','Alpha Phi Recruitment Tanks','6 hours ago','approved','pill-approved')}
-      ${activityRow('truck','Pi Beta Phi Hoodies','1 day ago','shipped','pill-shipped')}
+      <div class="section-title">Recent Orders</div>
+      <div class="section-sub">Latest activity across all workflows</div>
+      <div id="recentOrders"><div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px">Loading...</div></div>
     </div>
   </div>`;
-}
 
-function activityRow(icon, name, time, status, pillClass) {
-  const icons = {
-    doc: '<path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>',
-    palette: '<circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2M9 9h.01M15 9h.01"/>',
-    check: '<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>',
-    truck: '<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>',
-  };
-  return `<div class="activity-item">
-    <div class="activity-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${icons[icon]}</svg></div>
-    <div class="activity-info"><strong>${name}</strong><span>${time}</span></div>
-    <span class="status-pill ${pillClass}">${status}</span>
-  </div>`;
+  const{data:orders}=await sb.from('orders').select('status');
+  if(orders){
+    const c={intake:0,quote:0,design:0,production:0,fulfillment:0};
+    orders.forEach(o=>{if(c[o.status]!==undefined)c[o.status]++;});
+    document.getElementById('dashStats').innerHTML=`
+      <div class="stat-card"><div class="stat-bar" style="background:#3b82f6"></div><div><div class="stat-num">${c.intake+c.quote}</div><div class="stat-label">Pending Quotes</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#8b5cf6"></div><div><div class="stat-num">${c.design}</div><div class="stat-label">In Design</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#f59e0b"></div><div><div class="stat-num">${c.production}</div><div class="stat-label">In Production</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#22c55e"></div><div><div class="stat-num">${c.fulfillment}</div><div class="stat-label">Ready to Fulfill</div></div></div>`;
+  }
+
+  const role=currentProfile?.role;
+  let q=sb.from('orders').select('*').order('created_at',{ascending:false}).limit(6);
+  if(role==='sales_rep')q=q.eq('rep_id',currentUser.id);
+  const{data:recent}=await q;
+  const el=document.getElementById('recentOrders');
+  if(!recent||!recent.length){
+    el.innerHTML=`<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">No orders yet. <span style="color:#3b82f6;cursor:pointer" onclick="navigate('quote-request')">Create your first quote →</span></div>`;
+    return;
+  }
+  el.innerHTML=recent.map(o=>`<div class="activity-item">
+    <div class="activity-icon"><svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="#9ca3af" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+    <div class="activity-info"><strong>${o.client_name}${o.event_name?' – '+o.event_name:''}</strong><span>${timeAgo(o.created_at)}</span></div>
+    <span class="status-pill pill-${o.status}">${o.status}</span>
+  </div>`).join('');
 }
 
 // ── QUOTE REQUEST ──
-function quoteRequest() {
-  return `
-  <div class="page active">
+function renderQuoteRequest(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
     <div class="page-header"><h1>Quote Request</h1><p>Submit a new merchandise order request</p></div>
+    <div id="quoteMsg"></div>
     <div class="form-card">
       <div class="form-section">
         <div class="form-section-title">Client Information</div>
         <div class="form-row">
-          <div class="form-group"><label>Client Name</label><input class="form-input" placeholder="e.g. Alpha Phi"></div>
-          <div class="form-group"><label>Organization</label><input class="form-input" placeholder="e.g. Kappa Delta"></div>
+          <div class="form-group"><label>Client Name *</label><input class="form-input" id="q_client" placeholder="e.g. Alpha Phi"></div>
+          <div class="form-group"><label>Organization</label><input class="form-input" id="q_org" placeholder="e.g. Kappa Delta"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Event / Campaign</label><input class="form-input" placeholder="e.g. Spring Formal 2026"></div>
-          <div class="form-group"><label>Contact Email</label><input class="form-input" type="email" placeholder="client@org.com"></div>
+          <div class="form-group"><label>Event / Campaign</label><input class="form-input" id="q_event" placeholder="e.g. Spring Formal 2026"></div>
+          <div class="form-group"><label>Contact Email</label><input class="form-input" id="q_email" type="email" placeholder="client@org.com"></div>
         </div>
       </div>
       <div class="form-section">
         <div class="form-section-title">Order Details</div>
         <div class="form-row">
-          <div class="form-group"><label>Garment Type</label>
-            <select class="form-select"><option>T-Shirt</option><option>Hoodie</option><option>Tank Top</option><option>Crewneck</option><option>Long Sleeve</option><option>Hat</option></select>
-          </div>
-          <div class="form-group"><label>Print Method</label>
-            <select class="form-select"><option>Screen Print</option><option>Embroidery</option><option>DTG</option><option>Sublimation</option></select>
-          </div>
+          <div class="form-group"><label>Garment Type</label><select class="form-select" id="q_garment"><option>T-Shirt</option><option>Hoodie</option><option>Tank Top</option><option>Crewneck</option><option>Long Sleeve</option><option>Hat</option></select></div>
+          <div class="form-group"><label>Print Method</label><select class="form-select" id="q_print"><option>Screen Print</option><option>Embroidery</option><option>DTG</option><option>Sublimation</option></select></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Quantity</label><input class="form-input" type="number" placeholder="e.g. 50"></div>
-          <div class="form-group"><label>Budget</label><input class="form-input" placeholder="e.g. $1,200"></div>
+          <div class="form-group"><label>Quantity *</label><input class="form-input" id="q_qty" type="number" placeholder="e.g. 50"></div>
+          <div class="form-group"><label>Budget ($)</label><input class="form-input" id="q_budget" placeholder="e.g. 1200"></div>
         </div>
         <div class="form-row">
-          <div class="form-group"><label>Required By Date</label><input class="form-input" type="date"></div>
-          <div class="form-group"><label>Fulfillment Type</label>
-            <select class="form-select"><option>Bulk Delivery</option><option>Individual Ship</option></select>
-          </div>
+          <div class="form-group"><label>Required By Date</label><input class="form-input" id="q_date" type="date"></div>
+          <div class="form-group"><label>Fulfillment Type</label><select class="form-select" id="q_fulfill"><option value="bulk">Bulk Delivery</option><option value="individual">Individual Ship</option></select></div>
         </div>
+        <div class="form-group"><label>Rush Order?</label><select class="form-select" id="q_rush"><option value="false">No – Standard</option><option value="true">Yes – Rush (+25%)</option></select></div>
       </div>
       <div class="form-section">
         <div class="form-section-title">Design Brief</div>
-        <div class="form-group"><label>Design Description</label><textarea class="form-textarea" placeholder="Describe what you want. Colors, placement, text, logos..."></textarea></div>
-        <div class="form-group"><label>Rush Order?</label>
-          <select class="form-select"><option>No – Standard</option><option>Yes – Rush (+25%)</option></select>
-        </div>
+        <div class="form-group"><label>Design Description</label><textarea class="form-textarea" id="q_notes" placeholder="Describe what you want. Colors, placement, text, logos..."></textarea></div>
       </div>
-      <button class="btn-primary">Submit Quote Request</button>
+      <button class="btn-primary" onclick="submitQuote()">Submit Quote Request</button>
     </div>
   </div>`;
+}
+
+async function submitQuote(){
+  const client=document.getElementById('q_client').value.trim();
+  const qty=parseInt(document.getElementById('q_qty').value);
+  const msg=document.getElementById('quoteMsg');
+  if(!client){showErr(msg,'Client name is required');return;}
+  if(!qty||qty<1){showErr(msg,'Please enter a valid quantity');return;}
+  msg.style.display='none';
+  const{error}=await sb.from('orders').insert({
+    client_name:client,
+    organization:document.getElementById('q_org').value.trim(),
+    event_name:document.getElementById('q_event').value.trim(),
+    garment_type:document.getElementById('q_garment').value,
+    print_method:document.getElementById('q_print').value,
+    quantity:qty,
+    budget:parseFloat(document.getElementById('q_budget').value)||null,
+    timeline_date:document.getElementById('q_date').value||null,
+    fulfillment_type:document.getElementById('q_fulfill').value,
+    is_rush:document.getElementById('q_rush').value==='true',
+    design_notes:document.getElementById('q_notes').value.trim(),
+    rep_id:currentUser.id,
+    status:'intake'
+  });
+  if(error){showErr(msg,'Error: '+error.message);return;}
+  msg.style.cssText='display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
+  msg.textContent='✅ Quote submitted! Redirecting to dashboard...';
+  setTimeout(()=>navigate('dashboard'),1500);
 }
 
 // ── DESIGN QUEUE ──
-function designQueue() {
-  return `
-  <div class="page active">
+async function renderDesignQueue(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
     <div class="page-header"><h1>Design Queue</h1><p>Manage mockup creation and design workflow</p></div>
-    <div class="stat-grid">
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">Pending</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">In Progress</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">Completed</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">Revisions</div></div></div>
+    <div class="stat-grid" id="dqStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="setTab(this.parentElement,this);filterDesigns('all')">All Designs</div>
+      <div class="tab" onclick="setTab(this.parentElement,this);filterDesigns('intake')">Pending</div>
+      <div class="tab" onclick="setTab(this.parentElement,this);filterDesigns('design')">In Progress</div>
+      <div class="tab" onclick="setTab(this.parentElement,this);filterDesigns('production')">Production</div>
     </div>
-    <div class="tab-bar" id="dqTabs">
-      <div class="tab active" onclick="setTab('dqTabs',this)">All Designs</div>
-      <div class="tab" onclick="setTab('dqTabs',this)">Pending</div>
-      <div class="tab" onclick="setTab('dqTabs',this)">In Progress</div>
-      <div class="tab" onclick="setTab('dqTabs',this)">Completed</div>
-    </div>
-    <div class="design-grid">
-      <div class="design-card">
-        <div class="design-card-header">
-          <h3>Sigma Chi – Alpha Beta <span class="status-pill pill-rush">RUSH</span></h3>
-          <span class="status-pill pill-pending">pending</span>
-        </div>
-        <div class="design-card-sub">Bid Day 2026</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>T-Shirt</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>75 units</span></div>
-          <div class="meta-item"><label>Due Date:</label><span>2/8/2026</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>0 uploaded</span></div>
-        </div>
-        <div class="notes-box"><label>Notes:</label>Client wants Greek letters on front, chapter name on back</div>
-        <button class="btn-dark"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Start Design</button>
-      </div>
-      <div class="design-card">
-        <div class="design-card-header">
-          <h3>Kappa Delta</h3>
-          <span class="status-pill pill-in-progress">in progress</span>
-        </div>
-        <div class="design-card-sub">Spring Formal</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Hoodie</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>50 units</span></div>
-          <div class="meta-item"><label>Due Date:</label><span>2/11/2026</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>0 uploaded</span></div>
-          <div class="meta-item" style="grid-column:1/-1"><label>Assigned to:</label><span>Sarah Design</span></div>
-        </div>
-        <div class="notes-box"><label>Notes:</label>Floral theme requested, pastel colors</div>
-        <div class="btn-row">
-          <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Upload Mockup</button>
-          <button class="btn-dark"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Complete</button>
-        </div>
-      </div>
-      <div class="design-card">
-        <div class="design-card-header"><h3>Alpha Phi</h3><span class="status-pill pill-completed">completed</span></div>
-        <div class="design-card-sub">Recruitment Week</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Tank Top</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>100 units</span></div>
-          <div class="meta-item"><label>Due Date:</label><span>2/7/2026</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>2 uploaded</span></div>
-          <div class="meta-item" style="grid-column:1/-1"><label>Assigned to:</label><span>Mike Creative</span></div>
-        </div>
-        <div class="notes-box"><label>Notes:</label>Simple design with chapter colors</div>
-        <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Completed</button>
-      </div>
-      <div class="design-card">
-        <div class="design-card-header"><h3>Pi Beta Phi</h3><span class="status-pill pill-revision">revision needed</span></div>
-        <div class="design-card-sub">Sisterhood Retreat</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Crewneck</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>60 units</span></div>
-          <div class="meta-item"><label>Due Date:</label><span>2/9/2026</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>1 uploaded</span></div>
-          <div class="meta-item" style="grid-column:1/-1"><label>Assigned to:</label><span>Sarah Design</span></div>
-        </div>
-        <div class="notes-box"><label>Notes:</label>Client requested color change to navy blue</div>
-        <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Start Revision</button>
-      </div>
-    </div>
+    <div class="design-grid" id="designCards"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
   </div>`;
+  const{data:orders}=await sb.from('orders').select('*').in('status',['intake','quote','design','production']).order('created_at',{ascending:false});
+  window._dqOrders=orders||[];
+  renderDesignCards(window._dqOrders);
+  const o=window._dqOrders;
+  document.getElementById('dqStats').innerHTML=`
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x=>x.status==='intake').length}</div><div class="stat-label">Pending</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x=>x.status==='design').length}</div><div class="stat-label">In Progress</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x=>x.status==='production').length}</div><div class="stat-label">Production</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.length}</div><div class="stat-label">Total</div></div></div>`;
+}
+
+function filterDesigns(s){
+  const o=window._dqOrders||[];
+  renderDesignCards(s==='all'?o:o.filter(x=>x.status===s));
+}
+
+function renderDesignCards(orders){
+  const el=document.getElementById('designCards');
+  if(!orders.length){el.innerHTML=`<div style="color:#9ca3af;font-size:13px;padding:20px">No orders found.</div>`;return;}
+  el.innerHTML=orders.map(o=>{
+    const pill=o.status==='design'?'pill-in-progress':o.status==='production'?'pill-production':'pill-pending';
+    return `<div class="design-card">
+      <div class="design-card-header"><h3>${o.client_name}${o.is_rush?' <span class="status-pill pill-rush">RUSH</span>':''}</h3><span class="status-pill ${pill}">${o.status}</span></div>
+      <div class="design-card-sub">${o.event_name||o.organization||'—'}</div>
+      <div class="design-meta">
+        <div class="meta-item"><label>Product:</label><span>${o.garment_type||'—'}</span></div>
+        <div class="meta-item"><label>Quantity:</label><span>${o.quantity||'—'} units</span></div>
+        <div class="meta-item"><label>Due Date:</label><span>${o.timeline_date||'TBD'}</span></div>
+        <div class="meta-item"><label>Order #:</label><span class="order-num">${o.order_number||'—'}</span></div>
+      </div>
+      ${o.design_notes?`<div class="notes-box"><label>Notes:</label>${o.design_notes}</div>`:''}
+      <div class="btn-row">
+        <button class="btn-outline" onclick="updateOrderStatus('${o.id}','design')">▶ Start Design</button>
+        <button class="btn-dark" onclick="updateOrderStatus('${o.id}','production')">✓ To Production</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── APPROVALS ──
-function approvals() {
-  return `
-  <div class="page active">
+async function renderApprovals(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
     <div class="page-header"><h1>Approval Flow</h1><p>Review and approve design mockups</p></div>
-    <div class="stat-grid">
-      <div class="stat-card"><div><div class="stat-num">2</div><div class="stat-label">Pending</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">Approved</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">1</div><div class="stat-label">Revisions</div></div></div>
-      <div class="stat-card"><div><div class="stat-num">0</div><div class="stat-label">Rejected</div></div></div>
-    </div>
-    <div class="tab-bar">
-      <div class="tab active" onclick="setTab(this.parentElement,this)">Pending Review</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Approved</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Revisions</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">All</div>
-    </div>
-    <div class="approval-grid">
-      <div class="approval-card">
-        <div class="design-card-header"><h3>Alpha Phi</h3><span class="status-pill pill-pending-approval">pending approval</span></div>
-        <div class="design-card-sub">Recruitment Week</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Tank Top</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>100 units</span></div>
-          <div class="meta-item"><label>Designer:</label><span>Mike Creative</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>2 files</span></div>
-        </div>
-        <div class="notes-box"><label>Design Notes:</label>Final design with requested color scheme</div>
-        <div class="mockup-thumbs">
-          <div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-          <div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-        </div>
-        <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Review</button>
-      </div>
-      <div class="approval-card">
-        <div class="design-card-header"><h3>Delta Gamma</h3><span class="status-pill pill-pending-approval">pending approval</span></div>
-        <div class="design-card-sub">Philanthropy Event</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>T-Shirt</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>80 units</span></div>
-          <div class="meta-item"><label>Designer:</label><span>Sarah Design</span></div>
-          <div class="meta-item"><label>Mockups:</label><span>1 files</span></div>
-        </div>
-        <div class="notes-box"><label>Design Notes:</label>Rush order – client needs quick approval</div>
-        <div class="mockup-thumbs">
-          <div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
-        </div>
-        <div class="comments-box">
-          <div style="font-size:11px;color:#9ca3af;margin-bottom:8px">💬 Comments (1)</div>
-          <div class="comment-header"><span class="comment-author">John Sales</span><span class="comment-date">2/6/2026, 9:30:00 AM</span></div>
-          <div class="comment-text">Client mentioned they prefer a brighter shade of blue</div>
-        </div>
-        <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg> Review</button>
-      </div>
-    </div>
+    <div class="stat-grid" id="appStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>
+    <div class="tab-bar"><div class="tab active" onclick="setTab(this.parentElement,this)">Pending Review</div><div class="tab" onclick="setTab(this.parentElement,this)">Approved</div><div class="tab" onclick="setTab(this.parentElement,this)">All</div></div>
+    <div class="approval-grid" id="appCards"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
   </div>`;
+  const{data:orders}=await sb.from('orders').select('*').in('status',['design','production']).order('created_at',{ascending:false});
+  const list=orders||[];
+  document.getElementById('appStats').innerHTML=`
+    <div class="stat-card"><div><div class="stat-num">${list.filter(o=>o.status==='design').length}</div><div class="stat-label">Pending Review</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${list.filter(o=>o.status==='production').length}</div><div class="stat-label">Approved</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">0</div><div class="stat-label">Revisions</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${list.length}</div><div class="stat-label">Total</div></div></div>`;
+  if(!list.length){document.getElementById('appCards').innerHTML=`<div style="color:#9ca3af;font-size:13px;padding:20px">No items pending approval.</div>`;return;}
+  document.getElementById('appCards').innerHTML=list.map(o=>`
+    <div class="design-card">
+      <div class="design-card-header"><h3>${o.client_name}</h3><span class="status-pill pill-pending-approval">pending approval</span></div>
+      <div class="design-card-sub">${o.event_name||o.organization||'—'}</div>
+      <div class="design-meta">
+        <div class="meta-item"><label>Product:</label><span>${o.garment_type||'—'}</span></div>
+        <div class="meta-item"><label>Quantity:</label><span>${o.quantity||'—'} units</span></div>
+        <div class="meta-item"><label>Method:</label><span>${o.print_method||'—'}</span></div>
+        <div class="meta-item"><label>Order #:</label><span class="order-num">${o.order_number||'—'}</span></div>
+      </div>
+      ${o.design_notes?`<div class="notes-box"><label>Design Notes:</label>${o.design_notes}</div>`:''}
+      <div class="mockup-thumbs"><div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="#d1d5db" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div></div>
+      <div class="btn-row">
+        <button class="btn-outline" onclick="updateOrderStatus('${o.id}','design')">↩ Request Revision</button>
+        <button class="btn-dark" onclick="updateOrderStatus('${o.id}','fulfillment')">✓ Approve</button>
+      </div>
+    </div>`).join('');
 }
 
 // ── FULFILLMENT ──
-function fulfillment() {
-  return `
-  <div class="page active">
+async function renderFulfillment(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
     <div class="page-header"><h1>Fulfillment Dashboard</h1><p>Track production and shipping status</p></div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-bar" style="background:#3b82f6"></div><div><div class="stat-num">1</div><div class="stat-label">In Production</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#f59e0b"></div><div><div class="stat-num">1</div><div class="stat-label">Ready to Ship</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#8b5cf6"></div><div><div class="stat-num">1</div><div class="stat-label">In Transit</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#22c55e"></div><div><div class="stat-num">1</div><div class="stat-label">Delivered</div></div></div>
-    </div>
-    <div class="tab-bar">
-      <div class="tab active" onclick="setTab(this.parentElement,this)">Active Orders</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">In Production</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Shipping</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Completed</div>
-    </div>
-    <div class="fulfillment-grid">
-      <div class="fulfillment-card">
-        <div class="design-card-header"><h3>Alpha Phi – Gamma Delta</h3><span class="status-pill pill-production">🔵 production</span></div>
-        <div class="design-card-sub">Recruitment Week</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Tank Tops</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>100 units</span></div>
-          <div class="meta-item"><label>Started:</label><span>2/5/2026</span></div>
-          <div class="meta-item"><label>Est. Ship:</label><span>2/12/2026</span></div>
-        </div>
-        <div class="address-box">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Shipping Address:</div>123 Greek Row, University Town, ST 12345</div>
-        </div>
-        <div class="special-box"><label>Special Instructions:</label>Rush order – expedited shipping required</div>
-        <button class="btn-outline"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg> Mark Ready</button>
-      </div>
-      <div class="fulfillment-card">
-        <div class="design-card-header"><h3>Kappa Delta</h3><span class="status-pill pill-ready">⏰ ready_to_ship</span></div>
-        <div class="design-card-sub">Spring Formal</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>Hoodies</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>50 units</span></div>
-          <div class="meta-item"><label>Started:</label><span>2/2/2026</span></div>
-          <div class="meta-item"><label>Est. Ship:</label><span>2/9/2026</span></div>
-        </div>
-        <div class="address-box">
-          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-          <div><div style="font-size:10px;color:#9ca3af;margin-bottom:2px">Shipping Address:</div>456 Sorority Circle, College City, ST 54321</div>
-        </div>
-        <button class="btn-dark"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Add Tracking</button>
-      </div>
-      <div class="fulfillment-card">
-        <div class="design-card-header"><h3>Sigma Chi – Alpha Beta</h3><span class="status-pill pill-transit">🚚 in transit</span></div>
-        <div class="design-card-sub">Bid Day</div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Product:</label><span>T-Shirts</span></div>
-          <div class="meta-item"><label>Quantity:</label><span>75 units</span></div>
-          <div class="meta-item"><label>Tracking:</label><span style="font-size:11px;color:#6b7280">1Z999AA10123456784</span></div>
-          <div class="meta-item"><label>Est. Deliver:</label><span>2/14/2026</span></div>
-        </div>
-        <button class="btn-outline">View Tracking</button>
-      </div>
-    </div>
+    <div class="stat-grid" id="ffStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>
+    <div class="tab-bar"><div class="tab active" onclick="setTab(this.parentElement,this)">Active</div><div class="tab" onclick="setTab(this.parentElement,this)">Completed</div></div>
+    <div class="fulfillment-grid" id="ffCards"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
   </div>`;
+  const{data:orders}=await sb.from('orders').select('*').in('status',['production','fulfillment','complete']).order('created_at',{ascending:false});
+  const list=orders||[];
+  document.getElementById('ffStats').innerHTML=`
+    <div class="stat-card"><div class="stat-bar" style="background:#3b82f6"></div><div><div class="stat-num">${list.filter(o=>o.status==='production').length}</div><div class="stat-label">In Production</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#f59e0b"></div><div><div class="stat-num">${list.filter(o=>o.status==='fulfillment').length}</div><div class="stat-label">Ready to Ship</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#22c55e"></div><div><div class="stat-num">${list.filter(o=>o.status==='complete').length}</div><div class="stat-label">Complete</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#8b5cf6"></div><div><div class="stat-num">${list.length}</div><div class="stat-label">Total</div></div></div>`;
+  if(!list.length){document.getElementById('ffCards').innerHTML=`<div style="color:#9ca3af;font-size:13px;padding:20px">No orders in fulfillment yet.</div>`;return;}
+  document.getElementById('ffCards').innerHTML=list.map(o=>{
+    const pill=o.status==='production'?'pill-production':o.status==='fulfillment'?'pill-ready':'pill-completed';
+    return `<div class="design-card">
+      <div class="design-card-header"><h3>${o.client_name}</h3><span class="status-pill ${pill}">${o.status}</span></div>
+      <div class="design-card-sub">${o.event_name||o.organization||'—'}</div>
+      <div class="design-meta">
+        <div class="meta-item"><label>Product:</label><span>${o.garment_type||'—'}</span></div>
+        <div class="meta-item"><label>Quantity:</label><span>${o.quantity||'—'} units</span></div>
+        <div class="meta-item"><label>Fulfillment:</label><span>${o.fulfillment_type||'bulk'}</span></div>
+        <div class="meta-item"><label>Order #:</label><span class="order-num">${o.order_number||'—'}</span></div>
+      </div>
+      ${o.is_rush?`<div class="special-box"><label>⚡ Rush Order</label>Expedited shipping required</div>`:''}
+      <div class="btn-row">
+        <button class="btn-outline" onclick="updateOrderStatus('${o.id}','fulfillment')">📦 Mark Ready</button>
+        <button class="btn-dark" onclick="updateOrderStatus('${o.id}','complete')">✓ Complete</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── STOREFRONT ──
-function storefront() {
-  return `
-  <div class="page active">
-    <div class="header-row">
-      <div class="page-header" style="margin-bottom:0">
-        <h1>Storefront Management</h1>
-        <p>Manage products, variants, and chapter assignments</p>
-      </div>
-      <button class="btn-sm-dark">+ New Product</button>
-    </div>
-    <br>
+function renderStorefront(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
+    <div class="header-row"><div class="page-header" style="margin-bottom:0"><h1>Storefront Management</h1><p>Manage products, variants, and chapter assignments</p></div><button class="btn-sm-dark">+ New Product</button></div><br>
     <div class="stat-grid">
       <div class="stat-card"><div class="stat-bar" style="background:#3b82f6"></div><div><div class="stat-num">3</div><div class="stat-label">Total Products</div></div></div>
       <div class="stat-card"><div class="stat-bar" style="background:#22c55e"></div><div><div class="stat-num">2</div><div class="stat-label">Active</div></div></div>
       <div class="stat-card"><div class="stat-bar" style="background:#8b5cf6"></div><div><div class="stat-num">10</div><div class="stat-label">Variants</div></div></div>
       <div class="stat-card"><div class="stat-bar" style="background:#f59e0b"></div><div><div class="stat-num">8</div><div class="stat-label">Chapters</div></div></div>
     </div>
-    <div class="tab-bar">
-      <div class="tab active" onclick="setTab(this.parentElement,this)">All Products</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Active</div>
-      <div class="tab" onclick="setTab(this.parentElement,this)">Inactive</div>
-    </div>
+    <div class="tab-bar"><div class="tab active" onclick="setTab(this.parentElement,this)">All Products</div><div class="tab" onclick="setTab(this.parentElement,this)">Active</div><div class="tab" onclick="setTab(this.parentElement,this)">Inactive</div></div>
     <div class="product-grid">
-      <div class="product-card">
-        <div class="product-header"><span class="product-name">Classic Greek Letter T-Shirt</span><div><span class="product-price">$18.50</span><span class="product-price-label">Base Price</span></div></div>
-        <div class="product-category">Apparel</div>
-        <div class="product-desc">Premium cotton tee with custom Greek letters. Perfect for chapter events and recruitment.</div>
-        <div class="mockup-thumbs"><div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div><div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div></div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Variants:</label><span>5 options</span></div>
-          <div class="meta-item"><label>Total Stock:</label><span>225 units</span></div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:6px">👥 Assigned Chapters (3)</div>
-        <div class="chapter-tags"><span class="chapter-tag">Alpha Phi</span><span class="chapter-tag">Kappa Delta</span><span class="chapter-tag">Pi Beta Phi</span></div>
-        <div class="btn-row" style="margin-top:14px">
-          <button class="btn-outline">✏️ Edit</button>
-          <button class="btn-outline">🚫 Deactivate</button>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-header"><span class="product-name">Premium Hoodie</span><div><span class="product-price">$42.00</span><span class="product-price-label">Base Price</span></div></div>
-        <div class="product-category">Apparel</div>
-        <div class="product-desc">Heavyweight hoodie with embroidered Greek letters. Warm and stylish.</div>
-        <div class="mockup-thumbs"><div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div></div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Variants:</label><span>3 options</span></div>
-          <div class="meta-item"><label>Total Stock:</label><span>67 units</span></div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:6px">👥 Assigned Chapters (2)</div>
-        <div class="chapter-tags"><span class="chapter-tag">Sigma Chi</span><span class="chapter-tag">Delta Gamma</span></div>
-        <div class="btn-row" style="margin-top:14px">
-          <button class="btn-outline">✏️ Edit</button>
-          <button class="btn-outline">🚫 Deactivate</button>
-        </div>
-      </div>
-      <div class="product-card">
-        <div class="product-header"><span class="product-name">Sorority Tank Top</span><div><div><span class="status-pill pill-inactive" style="font-size:10px;margin-right:6px">Inactive</span><span class="product-price">$15.00</span></div><span class="product-price-label" style="text-align:right">Base Price</span></div></div>
-        <div class="product-category">Apparel</div>
-        <div class="product-desc">Lightweight tank perfect for recruitment and summer events.</div>
-        <div class="mockup-thumbs"><div class="mockup-thumb"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div></div>
-        <div class="design-meta">
-          <div class="meta-item"><label>Variants:</label><span>2 options</span></div>
-          <div class="meta-item"><label>Total Stock:</label><span>5 units</span></div>
-        </div>
-        <div style="font-size:12px;color:#6b7280;margin-bottom:6px">👥 Assigned Chapters (1)</div>
-        <div class="chapter-tags"><span class="chapter-tag">Alpha Phi</span></div>
-        <div class="btn-row" style="margin-top:14px">
-          <button class="btn-outline">✏️ Edit</button>
-          <button class="btn-dark">👁 Activate</button>
-        </div>
-      </div>
+      ${pCard('Classic Greek Letter T-Shirt','$18.50','Premium cotton tee with custom Greek letters.',['Alpha Phi','Kappa Delta','Pi Beta Phi'],'5 options','225 units',true)}
+      ${pCard('Premium Hoodie','$42.00','Heavyweight hoodie with embroidered Greek letters.',['Sigma Chi','Delta Gamma'],'3 options','67 units',true)}
+      ${pCard('Sorority Tank Top','$15.00','Lightweight tank perfect for recruitment.',['Alpha Phi'],'2 options','5 units',false)}
     </div>
   </div>`;
 }
 
+function pCard(name,price,desc,chapters,variants,stock,active){
+  return `<div class="product-card">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px"><span style="font-size:15px;font-weight:600">${name}</span><div style="text-align:right"><span style="font-size:14px;font-weight:600">${price}</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div></div>
+    <div style="font-size:12px;color:#9ca3af;margin-bottom:10px">Apparel ${!active?'<span class="status-pill pill-inactive" style="font-size:10px">Inactive</span>':''}</div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:12px;line-height:1.5">${desc}</div>
+    <div class="mockup-thumb" style="margin-bottom:12px"><svg fill="none" viewBox="0 0 24 24" stroke="#d1d5db" stroke-width="1.5"><path d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div><div style="font-size:11px;color:#9ca3af">Variants:</div><div style="font-size:13px;font-weight:500">${variants}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af">Total Stock:</div><div style="font-size:13px;font-weight:500">${stock}</div></div>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-bottom:6px">👥 Assigned Chapters (${chapters.length})</div>
+    <div class="chapter-tags">${chapters.map(c=>`<span class="chapter-tag">${c}</span>`).join('')}</div>
+    <div class="btn-row" style="margin-top:14px"><button class="btn-outline">✏️ Edit</button><button class="${active?'btn-outline':'btn-dark'}">${active?'🚫 Deactivate':'👁 Activate'}</button></div>
+  </div>`;
+}
+
 // ── ADMIN PANEL ──
-function adminPanel() {
-  return `
-  <div class="page active">
+async function renderAdminPanel(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
     <div class="page-header"><h1>Admin Dashboard</h1><p>System oversight and management controls</p></div>
-    <div class="quick-grid" style="grid-template-columns: repeat(auto-fill, minmax(200px,1fr))">
+    <div class="quick-grid" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr))">
       <div class="quick-card"><div class="quick-icon" style="background:#fff0f0"><svg fill="none" viewBox="0 0 24 24" stroke="#dc2626" stroke-width="2"><path d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg></div><div class="quick-info"><strong>Flags</strong><span>Review exceptions</span></div></div>
       <div class="quick-card"><div class="quick-icon" style="background:#eff6ff"><svg fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><div class="quick-info"><strong>Employees</strong><span>Manage team</span></div></div>
       <div class="quick-card"><div class="quick-icon" style="background:#f5f3ff"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg></div><div class="quick-info"><strong>Rules</strong><span>Configure defaults</span></div></div>
       <div class="quick-card"><div class="quick-icon" style="background:#f0fdf4"><svg fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><div class="quick-info"><strong>Audit Log</strong><span>Track changes</span></div></div>
     </div>
     <div class="section-card" style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="color:#f59e0b">⚠️</span><div class="section-title">Active Flags & Exceptions</div></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span>⚠️</span><div class="section-title">Active Flags & Exceptions</div></div>
       <div class="section-sub">Items requiring admin attention</div>
-      <div class="flag-grid">
-        <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">3</div><div class="flag-label">Margin Exceptions</div></div></div>
-        <div class="flag-card"><div class="flag-bar" style="background:#f59e0b"></div><div><div class="flag-num">5</div><div class="flag-label">Rush Orders</div></div></div>
-        <div class="flag-card"><div class="flag-bar" style="background:#eab308"></div><div><div class="flag-num">2</div><div class="flag-label">Licensing Missing</div></div></div>
-        <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">1</div><div class="flag-label">Unpaid Past Due</div></div></div>
-      </div>
+      <div class="flag-grid" id="flagGrid"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
     </div>
     <div class="two-col">
-      <div class="section-card">
-        <div class="section-title">Recent Overrides & Exceptions</div>
-        <div class="section-sub">Last admin actions and pending requests</div>
-        <div class="override-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div class="override-tags"><span class="override-tag tag-price">Price Override</span></div>
-            <span class="override-time">2 hours ago</span>
-          </div>
-          <div class="override-who">Grant (Admin) • Quote Q-2026-124 • Sigma Chi</div>
-          <div class="override-reason">Long-term customer relationship</div>
-        </div>
-        <div class="override-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div class="override-tags"><span class="override-tag tag-margin">Margin Exception</span><span class="override-tag tag-pending">Pending</span></div>
-            <span class="override-time">5 hours ago</span>
-          </div>
-          <div class="override-who">Sarah (Sales) • Quote Q-2026-125 • Alpha Phi</div>
-          <div class="override-reason">Requested approval for 23% margin</div>
-          <div class="approve-row">
-            <button class="btn-dark" style="padding:8px">Approve</button>
-            <button class="btn-outline" style="padding:8px">Deny</button>
-          </div>
-        </div>
-        <div class="override-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div class="override-tags"><span class="override-tag tag-commission">Commission Adjustment</span></div>
-            <span class="override-time">1 day ago</span>
-          </div>
-          <div class="override-who">Grant (Admin) • Sarah (Sales)</div>
-          <div class="override-reason">Performance bonus – raised to 9%</div>
-        </div>
-      </div>
-      <div class="section-card">
-        <div class="section-title">Business Metrics</div>
-        <div class="section-sub">Key performance indicators</div>
-        <div class="metric-card">
-          <div><div class="metric-label">Avg Margin (Last 30 Days)</div><div class="metric-val">37.2%</div><div class="metric-change">▲ +2.4% from previous period</div></div>
-          <div class="metric-icon" style="background:#f0fdf4"><span style="color:#16a34a">📈</span></div>
-        </div>
-        <div class="metric-card">
-          <div><div class="metric-label">Revenue (MTD)</div><div class="metric-val">$28,450</div><div style="font-size:11px;color:#6b7280">Across 23 orders</div></div>
-          <div class="metric-icon" style="background:#eff6ff"><span>💵</span></div>
-        </div>
-        <div class="metric-card">
-          <div><div class="metric-label">Avg Turnaround Time</div><div class="metric-val">9.5 days</div><div style="font-size:11px;color:#6b7280">Quote to delivery</div></div>
-          <div class="metric-icon" style="background:#f5f3ff"><span>⏱️</span></div>
-        </div>
-        <div class="metric-card">
-          <div><div class="metric-label">Commission Paid (MTD)</div><div class="metric-val">$2,418</div><div style="font-size:11px;color:#6b7280">8.5% avg rate</div></div>
-          <div class="metric-icon" style="background:#fff7ed"><span>💰</span></div>
-        </div>
-      </div>
+      <div class="section-card"><div class="section-title">All Orders</div><div class="section-sub">Full order list</div><div id="allOrders"><div style="color:#9ca3af;font-size:13px">Loading...</div></div></div>
+      <div class="section-card"><div class="section-title">Business Metrics</div><div class="section-sub">Key performance indicators</div><div id="metrics"><div style="color:#9ca3af;font-size:13px">Loading...</div></div></div>
     </div>
   </div>`;
+
+  const{data:orders}=await sb.from('orders').select('*').order('created_at',{ascending:false});
+  const list=orders||[];
+  const rush=list.filter(o=>o.is_rush).length;
+
+  document.getElementById('flagGrid').innerHTML=`
+    <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">${rush}</div><div class="flag-label">Rush Orders</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#f59e0b"></div><div><div class="flag-num">${list.filter(o=>o.status==='intake').length}</div><div class="flag-label">Pending Intake</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#eab308"></div><div><div class="flag-num">${list.filter(o=>o.status==='design').length}</div><div class="flag-label">In Design</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#22c55e"></div><div><div class="flag-num">${list.length}</div><div class="flag-label">Total Orders</div></div></div>`;
+
+  document.getElementById('allOrders').innerHTML=list.length?list.slice(0,10).map(o=>`
+    <div class="activity-item">
+      <div class="activity-info"><strong>${o.client_name}</strong><span>${o.order_number||'—'} · ${o.garment_type||'—'} · Qty ${o.quantity||'—'}</span></div>
+      <span class="status-pill pill-${o.status}">${o.status}</span>
+    </div>`).join(''):'<div style="color:#9ca3af;font-size:13px">No orders yet.</div>';
+
+  const revenue=list.reduce((s,o)=>s+(o.budget||0),0);
+  const avgQty=list.length?Math.round(list.reduce((s,o)=>s+(o.quantity||0),0)/list.length):0;
+  document.getElementById('metrics').innerHTML=`
+    <div class="metric-card"><div><div class="metric-label">Total Orders</div><div class="metric-val">${list.length}</div></div><span>📋</span></div>
+    <div class="metric-card"><div><div class="metric-label">Est. Pipeline Value</div><div class="metric-val">$${revenue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280">Based on client budgets</div></div><span>💵</span></div>
+    <div class="metric-card"><div><div class="metric-label">Rush Orders</div><div class="metric-val">${rush}</div>${rush>0?'<div style="font-size:11px;color:#dc2626">Needs attention</div>':''}</div><span>⚡</span></div>
+    <div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">${avgQty} units</div></div><span>📦</span></div>`;
 }
 
-// ════════════════════ UTILS ════════════════════
-function setTab(container, el) {
-  if (typeof container === 'string') container = document.getElementById(container);
-  container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-}
+boot();
 </script>
 </body>
 </html>
