@@ -180,6 +180,14 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .flow-node.current{background:#0f75bc;border-color:#0f75bc;color:#fff}
 .flow-arrow{width:24px;height:2px;background:#e5e7eb;flex-shrink:0}
 .flow-arrow.done{background:#bbf7d0}
+.wizard-steps{display:flex;gap:4px;margin-bottom:20px;flex-wrap:wrap}
+.wizard-step{padding:8px 14px;border-radius:8px;font-size:12px;font-weight:500;background:#f3f4f6;color:#6b7280;cursor:pointer}
+.wizard-step.active{background:#0f75bc;color:#fff}
+.wizard-step.done{background:#dcfce7;color:#16a34a}
+.timeline-risk{padding:12px 16px;border-radius:8px;margin-bottom:16px;font-size:13px;font-weight:500}
+.timeline-risk.low{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
+.timeline-risk.medium{background:#fef3c7;color:#d97706;border:1px solid #fde68a}
+.timeline-risk.high{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
 @media(max-width:700px){.two-col,.form-row{grid-template-columns:1fr}.sidebar{width:200px}.main-content{padding:20px 16px}.card-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -256,9 +264,9 @@ let CP = null; // current profile (db)
 let PAGE = 'dashboard';
 
 const NAV_ROLES = {
-  super_admin: ['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin','team'],
-  admin:       ['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin','team'],
-  sales_rep:   ['dashboard','quote-request','approvals','storefront'],
+  super_admin: ['dashboard','quote-request','chapters','design-queue','approvals','fulfillment','storefront','admin','team'],
+  admin:       ['dashboard','quote-request','chapters','design-queue','approvals','fulfillment','storefront','admin','team'],
+  sales_rep:   ['dashboard','quote-request','chapters','approvals','storefront'],
   designer:    ['dashboard','design-queue','approvals'],
   fulfillment: ['dashboard','fulfillment'],
 };
@@ -266,6 +274,7 @@ const NAV_ROLES = {
 const NAV_DEFS = {
   dashboard:      { label:'Dashboard',     icon:'<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' },
   'quote-request':{ label:'New Quote',     icon:'<path d="M12 4v16m8-8H4"/>' },
+  chapters:       { label:'Chapters',      icon:'<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M17 16h2m-2 0h-5m-9 0H3"/>' },
   'design-queue': { label:'Design Queue',  icon:'<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>' },
   approvals:      { label:'Approvals',     icon:'<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
   fulfillment:    { label:'Fulfillment',   icon:'<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>' },
@@ -279,12 +288,22 @@ const STATUS_LABELS = {intake:'Intake',quote:'Quoted',design:'Design',production
 
 // ═══════════════════ BOOT ═══════════════════
 async function boot() {
+  const params = new URLSearchParams(window.location.search);
+  const storefrontToken = params.get('storefront_token') || params.get('token');
+  if (storefrontToken && sb) {
+    hide('loadingScreen');
+    try {
+      const { data, error } = await sb.rpc('get_public_storefront', { token: storefrontToken });
+      if (error) { document.body.innerHTML = '<div class="err" style="margin:20px">Storefront not found or inactive.</div>'; return; }
+      if (data) { renderPublicStorefront(data, storefrontToken); return; }
+    } catch (e) { console.error('[PublicStorefront]', e); document.body.innerHTML = '<div class="err" style="margin:20px">Failed to load storefront.</div>'; return; }
+  }
   if (!sb) { hide('loadingScreen'); show('loginPage'); document.body.insertAdjacentHTML('beforeend', '<div class="err" style="margin:20px">Failed to load Supabase. Check your connection.</div>'); return; }
   try {
     const { data: { session } } = await sb.auth.getSession();
     if (session) await loadProfile(session.user);
     else showLogin();
-  } catch (e) { hide('loadingScreen'); show('loginPage'); console.error(e); }
+  } catch (e) { hide('loadingScreen'); show('loginPage'); console.error('[Boot]', e); }
 }
 
 async function loadProfile(user) {
@@ -336,6 +355,67 @@ async function doSignOut() {
   showLogin();
 }
 
+// ═══════════════════ PUBLIC STOREFRONT (no auth) ═══════════════════
+function renderPublicStorefront(data, token) {
+  window._publicStorefrontData = data;
+  window._publicStorefrontToken = token;
+  const products = data.products || [];
+  const price = (p) => p.price_override != null ? Number(p.price_override) : Number(p.base_price);
+  document.body.innerHTML = `
+  <div class="main-content" style="max-width:800px;margin:0 auto;padding:24px">
+    <div class="page-header"><h1>${escapeHtml(data.name || 'Storefront')}</h1>
+    ${data.delivery_estimate_text ? `<p class="section-sub">${escapeHtml(data.delivery_estimate_text)}</p>` : ''}
+    ${data.closes_at ? `<p style="font-size:12px;color:#6b7280">Closes ${fmtDate(data.closes_at)}</p>` : ''}</div>
+    <div class="card-grid" id="publicStorefrontProducts"></div>
+    <div id="publicStorefrontForm" style="display:none;margin-top:24px" class="form-card">
+      <h3 style="margin-bottom:12px">Place order</h3>
+      <div class="form-group"><label>Name *</label><input class="form-input" id="ps_name" placeholder="Your name"></div>
+      <div class="form-group"><label>Email *</label><input class="form-input" id="ps_email" type="email" placeholder="you@example.com"></div>
+      <div id="ps_items"></div>
+      <button class="btn btn-blue btn-full" onclick="submitPublicStorefrontOrder()">Submit Order</button>
+    </div>
+    <div id="publicStorefrontMsg"></div>
+  </div>`;
+  const el = document.getElementById('publicStorefrontProducts');
+  if (!el) return;
+  if (!products.length) { el.innerHTML = '<p style="color:#6b7280">No products available.</p>'; return; }
+  el.innerHTML = products.map((p, i) => `
+    <div class="order-card">
+      <div style="font-size:15px;font-weight:600;margin-bottom:4px">${escapeHtml(p.name)}</div>
+      ${p.short_description ? `<div style="font-size:12px;color:#6b7280;margin-bottom:8px">${escapeHtml(p.short_description)}</div>` : ''}
+      <div style="font-size:18px;font-weight:700;color:#0f75bc">$${price(p).toFixed(2)}</div>
+      <button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="openPublicStorefrontOrder()">Place Order</button>
+    </div>`).join('');
+}
+
+function openPublicStorefrontOrder() {
+  const products = (window._publicStorefrontData && window._publicStorefrontData.products) || [];
+  document.getElementById('publicStorefrontForm').style.display = 'block';
+  const container = document.getElementById('ps_items');
+  if (container) container.innerHTML = products.map((p, i) => {
+    const pr = p.price_override != null ? Number(p.price_override) : Number(p.base_price);
+    return `<div class="form-row" style="align-items:center"><div class="form-group" style="flex:1"><label>${escapeHtml(p.name)} — $${pr.toFixed(2)}</label><input type="number" min="0" class="form-input" id="ps_qty_${i}" placeholder="Qty" value="0"></div></div>`;
+  }).join('');
+}
+
+async function submitPublicStorefrontOrder() {
+  const token = window._publicStorefrontToken;
+  const name = document.getElementById('ps_name')?.value?.trim();
+  const email = document.getElementById('ps_email')?.value?.trim();
+  const msgEl = document.getElementById('publicStorefrontMsg');
+  if (!name || !email) { if (msgEl) { msgEl.className = 'err'; msgEl.style.display = 'block'; msgEl.textContent = 'Name and email required.'; } return; }
+  const items = [];
+  document.querySelectorAll('[id^="ps_qty_"]').forEach((inp, i) => { const q = parseInt(inp.value, 10); if (q > 0) items.push({ index: i, qty: q }); });
+  if (!items.length) { if (msgEl) { msgEl.className = 'err'; msgEl.style.display = 'block'; msgEl.textContent = 'Add at least one item.'; } return; }
+  if (!sb || !token) { if (msgEl) { msgEl.className = 'err'; msgEl.style.display = 'block'; msgEl.textContent = 'Session expired.'; } return; }
+  const { data: sf } = await sb.from('storefronts').select('id').eq('public_token', token).single();
+  if (!sf) { if (msgEl) { msgEl.className = 'err'; msgEl.style.display = 'block'; msgEl.textContent = 'Storefront not found.'; } return; }
+  const { error } = await sb.from('storefront_orders').insert({ storefront_id: sf.id, buyer_name: name, buyer_email: email, items: items, status: 'pending' });
+  if (error) { if (msgEl) { msgEl.className = 'err'; msgEl.style.display = 'block'; msgEl.textContent = error.message; } return; }
+  if (msgEl) { msgEl.className = 'suc'; msgEl.style.display = 'block'; msgEl.textContent = 'Order submitted. We\'ll be in touch!'; }
+  document.getElementById('publicStorefrontForm').style.display = 'none';
+}
+
 // ═══════════════════ NAV ═══════════════════
 function buildNav(role) {
   const pages = NAV_ROLES[role] || ['dashboard'];
@@ -357,6 +437,7 @@ function go(page) {
   const renders = {
     dashboard: pgDashboard,
     'quote-request': pgQuote,
+    chapters: pgChapters,
     'design-queue': pgDesignQueue,
     approvals: pgApprovals,
     fulfillment: pgFulfillment,
@@ -400,6 +481,12 @@ function fmtDate(d) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+function orderDisplayName(o) {
+  if (o.client_name) return escapeHtml(o.client_name);
+  if (o.chapter_id && window._chapterMap && window._chapterMap[o.chapter_id]) return escapeHtml(window._chapterMap[o.chapter_id].chapter_name || window._chapterMap[o.chapter_id].school || '—');
+  return '—';
+}
+
 function pill(status) {
   return `<span class="pill pill-${status}">${STATUS_LABELS[status] || status}</span>`;
 }
@@ -431,52 +518,59 @@ async function updateStatus(id, status) {
 // ═══════════════════ DASHBOARD ═══════════════════
 async function pgDashboard() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>Dashboard</h1><p>Live overview of all orders in the pipeline</p></div>
+    <div class="page-header"><h1>Dashboard</h1><p>Live overview of orders and pipeline</p></div>
+    <div id="dErr" class="err" style="display:none"></div>
     <div class="stat-grid" id="dStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
     <div class="quick-grid">
-      <div class="quick-card" onclick="go('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Start a new order</span></div></div>
-      <div class="quick-card" onclick="go('design-queue')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>View active designs</span></div></div>
+      <div class="quick-card" onclick="go('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Start intake</span></div></div>
+      <div class="quick-card" onclick="go('chapters')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M17 16h2m-2 0h-5m-9 0H3"/></svg></div><div class="quick-info"><strong>Chapters</strong><span>CRM</span></div></div>
+      <div class="quick-card" onclick="go('design-queue')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>Active designs</span></div></div>
       <div class="quick-card" onclick="go('approvals')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div class="quick-info"><strong>Approvals</strong><span>Pending review</span></div></div>
       <div class="quick-card" onclick="go('fulfillment')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div><div class="quick-info"><strong>Fulfillment</strong><span>Production & shipping</span></div></div>
     </div>
     <div class="section-card">
       <div class="section-title">Recent Orders</div>
-      <div class="section-sub">Click any order to view details and take action</div>
+      <div class="section-sub">Click any order to view details</div>
       <div id="dRecent"><div style="text-align:center;padding:20px"><div class="spinner-sm"></div></div></div>
     </div>
   </div>`);
 
-  // Load real stats
-  const { data: orders } = await sb.from('orders').select('status');
-  const dStatsEl = $('dStats');
-  if (orders && dStatsEl) {
+  const dErr = $('dErr'); const dStatsEl = $('dStats'); const dRecent = $('dRecent');
+  try {
+    let q = sb.from('orders').select('*');
+    if (CP?.role === 'sales_rep') q = q.eq('rep_id', CU.id);
+    const { data: orders, error } = await q;
+    if (error) throw error;
+    const list = orders || [];
     const c = {};
     STATUS_FLOW.forEach(s => c[s] = 0);
-    orders.forEach(o => { if (c[o.status] !== undefined) c[o.status]++; });
-    dStatsEl.innerHTML = `
+    list.forEach(o => { if (c[o.status] !== undefined) c[o.status]++; });
+    const now = Date.now(); const day = 24 * 60 * 60 * 1000;
+    const due7 = list.filter(o => o.needed_by_date && !['complete','cancelled'].includes(o.status) && (new Date(o.needed_by_date) - now) <= 7 * day).length;
+    const due14 = list.filter(o => o.needed_by_date && !['complete','cancelled'].includes(o.status) && (new Date(o.needed_by_date) - now) <= 14 * day).length;
+    if (dStatsEl) dStatsEl.innerHTML = `
       <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${(c.intake || 0) + (c.quote || 0)}</div><div class="stat-label">Pending Quotes</div></div></div>
       <div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">${c.design || 0}</div><div class="stat-label">In Design</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">${c.production || 0}</div><div class="stat-label">In Production</div></div></div>
-      <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${c.fulfillment || 0}</div><div class="stat-label">Ready to Ship</div></div></div>`;
-  } else if (dStatsEl) dStatsEl.innerHTML = '<div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Loading…</div></div>';
-
-  // Load recent orders (filter by rep if sales role)
-  let q = sb.from('orders').select('*').order('created_at', { ascending: false }).limit(8);
-  if (CP?.role === 'sales_rep') q = q.eq('rep_id', CU.id);
-  const { data: recent } = await q;
-
-  if (!recent?.length) {
-    mc('dRecent', emptyState('No orders yet.', 'Create First Quote', "go('quote-request')"));
-    return;
+      <div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">${c.production || 0}</div><div class="stat-label">Production</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${c.fulfillment || 0}</div><div class="stat-label">Ready to Ship</div></div></div>
+      <div class="stat-card"><div><div class="stat-num">${due7}</div><div class="stat-label">Due in 7 days</div></div></div>
+      <div class="stat-card"><div><div class="stat-num">${due14}</div><div class="stat-label">Due in 14 days</div></div></div>`;
+    const recent = list.slice(0, 8);
+    if (!recent.length) { mc('dRecent', emptyState('No orders yet.', 'Create First Quote', "go('quote-request')")); return; }
+    if (dRecent) dRecent.innerHTML = recent.map(o => `
+      <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
+        <div style="flex:1">
+          <strong style="font-size:13px;font-weight:500;color:#111827">${orderDisplayName(o)}${o.event_name ? ' – ' + escapeHtml(o.event_name) : ''}</strong>
+          <span style="font-size:11px;color:#9ca3af;display:block;margin-top:1px">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'} · ${timeAgo(o.created_at)}</span>
+        </div>
+        ${pill(o.status)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}
+      </div>`).join('');
+  } catch (e) {
+    console.error('[Dashboard]', e);
+    if (dErr) { dErr.textContent = e.message || 'Failed to load dashboard.'; dErr.style.display = 'block'; }
+    if (dStatsEl) dStatsEl.innerHTML = '<div class="stat-card"><div class="stat-label">No data</div></div>';
+    if (dRecent) dRecent.innerHTML = emptyState('Could not load orders.', null, null);
   }
-  const el = $('dRecent'); if (el) el.innerHTML = recent.map(o => `
-    <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
-      <div style="flex:1">
-        <strong style="font-size:13px;font-weight:500;color:#111827">${escapeHtml(o.client_name)}${o.event_name ? ' – ' + escapeHtml(o.event_name) : ''}</strong>
-        <span style="font-size:11px;color:#9ca3af;display:block;margin-top:1px">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'} · ${timeAgo(o.created_at)}</span>
-      </div>
-      ${pill(o.status)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}
-    </div>`).join('');
 }
 
 // ═══════════════════ ORDER DETAIL MODAL ═══════════════════
@@ -505,7 +599,7 @@ async function openOrder(id) {
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Print Method</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.print_method || '—')}</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Quantity</div><div style="font-size:13px;font-weight:500">${o.quantity ?? '—'} units</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Budget</div><div style="font-size:13px;font-weight:500">${o.budget != null ? '$' + Number(o.budget).toLocaleString() : '—'}</div></div>
-      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Due Date</div><div style="font-size:13px;font-weight:500">${escapeHtml(fmtDate(o.timeline_date))}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Due Date</div><div style="font-size:13px;font-weight:500">${escapeHtml(fmtDate(o.needed_by_date || o.timeline_date))}</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Fulfillment</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.fulfillment_type || 'bulk')}</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Organization</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.organization || '—')}</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Rush</div><div style="font-size:13px;font-weight:500">${o.is_rush ? '⚡ Yes' : 'No'}</div></div>
@@ -535,84 +629,334 @@ async function cancelOrder(id) {
   if (ok) { $('orderModal')?.remove(); go(PAGE); }
 }
 
-// ═══════════════════ QUOTE REQUEST ═══════════════════
-function pgQuote() {
+// ═══════════════════ CHAPTERS ═══════════════════
+async function pgChapters() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>New Quote Request</h1><p>Submit a new merchandise order</p></div>
-    <div id="quoteMsg" class="err" style="display:none"></div>
-    <div class="form-card">
-      <div class="form-section">
-        <div class="form-section-title">Client Information</div>
-        <div class="form-row">
-          <div class="form-group"><label>Client / Chapter Name *</label><input class="form-input" id="q_client" placeholder="e.g. Alpha Phi"></div>
-          <div class="form-group"><label>Organization / School</label><input class="form-input" id="q_org" placeholder="e.g. Ohio State"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Event / Campaign Name</label><input class="form-input" id="q_event" placeholder="e.g. Spring Formal 2026"></div>
-          <div class="form-group"><label>Client Contact Email</label><input class="form-input" id="q_email" type="email" placeholder="contact@chapter.com"></div>
-        </div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-title">Order Details</div>
-        <div class="form-row">
-          <div class="form-group"><label>Garment Type</label>
-            <select class="form-select" id="q_garment">
-              <option>T-Shirt</option><option>Hoodie</option><option>Crewneck</option><option>Tank Top</option><option>Long Sleeve</option><option>Polo</option><option>Hat</option><option>Jacket</option><option>Other</option>
-            </select></div>
-          <div class="form-group"><label>Print Method</label>
-            <select class="form-select" id="q_print">
-              <option>Screen Print</option><option>Embroidery</option><option>DTG</option><option>Sublimation</option><option>Heat Transfer</option>
-            </select></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Quantity *</label><input class="form-input" id="q_qty" type="number" min="1" placeholder="e.g. 50"></div>
-          <div class="form-group"><label>Client Budget ($)</label><input class="form-input" id="q_budget" type="number" placeholder="e.g. 1200"></div>
-        </div>
-        <div class="form-row">
-          <div class="form-group"><label>Needed By Date</label><input class="form-input" id="q_date" type="date"></div>
-          <div class="form-group"><label>Fulfillment Type</label>
-            <select class="form-select" id="q_fulfill"><option value="bulk">Bulk Delivery</option><option value="individual">Individual Ship</option></select></div>
-        </div>
-        <div class="form-group"><label>Rush Order?</label>
-          <select class="form-select" id="q_rush"><option value="false">No – Standard timeline</option><option value="true">Yes – Rush (+25% fee)</option></select></div>
-      </div>
-      <div class="form-section">
-        <div class="form-section-title">Design Brief</div>
-        <div class="form-group"><label>Design Description</label>
-          <textarea class="form-textarea" id="q_notes" placeholder="Describe the design: colors, placement, text, logos, inspiration, any special requirements..."></textarea></div>
-      </div>
-      <button class="btn btn-blue btn-full" style="font-size:14px;padding:12px" onclick="submitQuote()">Submit Quote Request</button>
+    <div class="page-header"><h1>Chapters</h1><p>Manage chapter profiles, contacts, and orders</p></div>
+    <div id="chErr" class="err" style="display:none"></div>
+    <div class="form-group" style="max-width:320px;margin-bottom:16px">
+      <input type="text" class="form-input" id="chSearch" placeholder="Search by school or chapter name..." oninput="chSearchDebounce()">
     </div>
+    <div id="chList"><div style="text-align:center;padding:24px"><div class="spinner-sm"></div></div></div>
+    <div id="chDetail" style="display:none"></div>
   </div>`);
+  await loadChaptersList();
 }
 
-async function submitQuote() {
-  const client = v('q_client'), qty = parseInt(v('q_qty'));
-  const msg = $('quoteMsg');
-  if (!client) { showErr(msg, '⚠ Client name is required'); return; }
-  if (!qty || qty < 1) { showErr(msg, '⚠ Please enter a valid quantity'); return; }
-  msg.style.display = 'none';
+let _chSearchTimeout = null;
+function chSearchDebounce() {
+  clearTimeout(_chSearchTimeout);
+  _chSearchTimeout = setTimeout(() => chFilterList(), 200);
+}
 
-  const { error } = await sb.from('orders').insert({
-    client_name: client,
-    organization: v('q_org'),
-    event_name: v('q_event'),
-    garment_type: v('q_garment') || 'T-Shirt',
-    print_method: v('q_print') || 'Screen Print',
-    quantity: qty,
-    budget: parseFloat(v('q_budget')) || null,
-    timeline_date: v('q_date') || null,
-    fulfillment_type: ($('q_fulfill') && $('q_fulfill').value) || 'bulk',
-    is_rush: ($('q_rush') && $('q_rush').value) === 'true',
-    design_notes: v('q_notes'),
-    rep_id: CU.id,
-    status: 'intake',
+async function loadChaptersList() {
+  const errEl = $('chErr'); const listEl = $('chList'); if (!listEl) return;
+  let q = sb.from('chapters').select('*').order('chapter_name');
+  if (CP?.role === 'sales_rep') q = q.eq('assigned_sales_rep', CU.id);
+  const { data: chapters, error } = await q;
+  if (error) { console.error('[Chapters]', error); if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; } listEl.innerHTML = emptyState('Failed to load chapters.', null, null); return; }
+  window._chaptersList = chapters || [];
+  window._chapterMap = {};
+  (chapters || []).forEach(c => { window._chapterMap[c.id] = c; });
+  chFilterList();
+}
+
+function chFilterList() {
+  const listEl = $('chList'); if (!listEl) return;
+  const search = (v('chSearch') || '').toLowerCase();
+  const list = (window._chaptersList || []).filter(c => !search || (c.school || '').toLowerCase().includes(search) || (c.chapter_name || '').toLowerCase().includes(search));
+  if (!list.length) { listEl.innerHTML = emptyState('No chapters found.', null, null); return; }
+  listEl.innerHTML = `<div class="card-grid">${list.map(c => `
+    <div class="order-card" style="cursor:pointer" onclick="openChapterDetail('${c.id}')">
+      <div class="card-header"><h3>${escapeHtml(c.chapter_name)}</h3><span class="pill pill-${c.status === 'active' ? 'complete' : 'cancelled'}">${c.status || 'active'}</span></div>
+      <div class="card-sub">${escapeHtml(c.school || '—')} · ${escapeHtml(c.org_type || '')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Assigned</label><span>—</span></div>
+        <div class="meta-row"><label>Open orders</label><span id="chOpen_${c.id}">—</span></div>
+      </div>
+    </div>`).join('')}</div>`;
+  list.forEach(c => loadChapterOpenCount(c.id));
+}
+
+function loadChapterOpenCount(chapterId) {
+  sb.from('orders').select('id', { count: 'exact', head: true }).eq('chapter_id', chapterId).in('status', ['intake','quote','design','production','fulfillment']).then(({ count }) => {
+    const el = $('chOpen_' + chapterId); if (el) el.textContent = count ?? 0;
   });
+}
 
-  if (error) { showErr(msg, '⚠ Error: ' + error.message); return; }
-  msg.className = 'suc';
-  msg.style.cssText = 'display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
-  msg.textContent = '✅ Quote submitted! Redirecting to dashboard...';
+async function openChapterDetail(chapterId) {
+  const detailEl = $('chDetail'); const listEl = $('chList'); if (!detailEl || !listEl) return;
+  const c = window._chapterMap && window._chapterMap[chapterId]; if (!c) return;
+  listEl.style.display = 'none';
+  detailEl.style.display = 'block';
+  detailEl.innerHTML = `<div class="page"><div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button class="btn btn-ghost btn-sm" onclick="closeChapterDetail()">← Back</button>
+    <h1 style="margin:0">${escapeHtml(c.chapter_name)}</h1>
+  </div>
+  <div class="section-card">
+    <div class="section-title">Chapter profile</div>
+    <div class="card-meta"><div class="meta-row"><label>School</label><span>${escapeHtml(c.school || '—')}</span></div>
+    <div class="meta-row"><label>Org type</label><span>${escapeHtml(c.org_type || '—')}</span></div>
+    <div class="meta-row"><label>National org</label><span>${escapeHtml(c.national_org || '—')}</span></div>
+    <div class="meta-row"><label>Campus</label><span>${escapeHtml(c.campus || '—')}</span></div></div>
+    ${c.notes ? `<div class="notes-box"><label>Notes</label>${escapeHtml(c.notes)}</div>` : ''}
+  </div>
+  <div class="section-card">
+    <div class="section-title">Contacts</div>
+    <div id="chContacts"><div class="spinner-sm"></div></div>
+    <button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="openAddContact('${chapterId}')">+ Add Contact</button>
+  </div>
+  <div class="section-card">
+    <div class="section-title">Orders</div>
+    <div id="chOrders"><div class="spinner-sm"></div></div>
+    <button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="goToQuoteWithChapter('${chapterId}')">Create New Quote for this Chapter</button>
+  </div></div>`;
+  await loadChapterContacts(chapterId);
+  await loadChapterOrders(chapterId);
+}
+
+function closeChapterDetail() {
+  const detailEl = $('chDetail'); const listEl = $('chList'); if (detailEl) detailEl.style.display = 'none'; if (listEl) listEl.style.display = 'block'; detailEl.innerHTML = '';
+}
+
+function goToQuoteWithChapter(chapterId) {
+  window._quotePrefillChapterId = chapterId;
+  closeChapterDetail();
+  go('quote-request');
+}
+
+async function loadChapterContacts(chapterId) {
+  const el = $('chContacts'); if (!el) return;
+  const { data: contacts, error } = await sb.from('chapter_contacts').select('*').eq('chapter_id', chapterId).order('is_primary', { ascending: false });
+  if (error) { el.innerHTML = '<p class="err">Failed to load contacts.</p>'; return; }
+  if (!contacts || !contacts.length) { el.innerHTML = '<p style="color:#6b7280">No contacts yet.</p>'; return; }
+  el.innerHTML = `<table class="team-table"><thead><tr><th>Name</th><th>Role</th><th>Contact</th><th>Primary</th></tr></thead><tbody>
+  ${contacts.map(cc => `<tr>
+    <td>${escapeHtml(cc.name)}</td><td>${escapeHtml(cc.role_title || '—')}</td>
+    <td>${escapeHtml(cc.email || cc.phone || '—')}</td>
+    <td>${cc.is_primary ? '✓' : '—'}</td>
+  </tr>`).join('')}</tbody></table>`;
+}
+
+async function loadChapterOrders(chapterId) {
+  const el = $('chOrders'); if (!el) return;
+  const { data: orders, error } = await sb.from('orders').select('*').eq('chapter_id', chapterId).order('created_at', { ascending: false }).limit(20);
+  if (error) { el.innerHTML = '<p class="err">Failed to load orders.</p>'; return; }
+  if (!orders || !orders.length) { el.innerHTML = '<p style="color:#6b7280">No orders yet.</p>'; return; }
+  el.innerHTML = orders.map(o => `
+    <div class="activity-item" onclick="openOrder('${o.id}')">
+      <div style="flex:1"><strong>${orderDisplayName(o)}</strong> ${o.event_name ? ' – ' + escapeHtml(o.event_name) : ''}<span style="font-size:11px;color:#9ca3af;display:block">${escapeHtml(o.order_number || '—')} · ${fmtDate(o.needed_by_date || o.timeline_date)}</span></div>
+      ${pill(o.status)}
+    </div>`).join('');
+}
+
+function openAddContact(chapterId) {
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg open'; modal.id = 'addContactModal';
+  modal.innerHTML = `<div class="modal"><div class="modal-header"><h2>Add Contact</h2><button class="modal-close" onclick="$('addContactModal').remove()">×</button></div>
+  <div id="acMsg" class="err" style="display:none"></div>
+  <div class="form-group"><label>Name *</label><input class="form-input" id="ac_name" placeholder="Full name"></div>
+  <div class="form-group"><label>Role / Title</label><input class="form-input" id="ac_role" placeholder="e.g. Merch Chair"></div>
+  <div class="form-row"><div class="form-group"><label>Email</label><input class="form-input" id="ac_email" type="email"></div><div class="form-group"><label>Phone</label><input class="form-input" id="ac_phone"></div></div>
+  <div class="form-group"><label>Primary contact?</label><select class="form-select" id="ac_primary"><option value="false">No</option><option value="true">Yes</option></select></div>
+  <button class="btn btn-blue btn-full" onclick="saveContact('${chapterId}')">Save Contact</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function saveContact(chapterId) {
+  const name = v('ac_name'); const msgEl = $('acMsg'); if (!name) { showErr(msgEl, 'Name required'); return; }
+  const primary = ($('ac_primary') && $('ac_primary').value) === 'true';
+  const { error } = await sb.from('chapter_contacts').insert({ chapter_id: chapterId, name, role_title: v('ac_role'), email: v('ac_email'), phone: v('ac_phone'), is_primary: primary });
+  if (error) { showErr(msgEl, error.message); return; }
+  $('addContactModal')?.remove();
+  loadChapterContacts(chapterId);
+}
+
+// ═══════════════════ QUOTE REQUEST (Intake Wizard) ═══════════════════
+const INTAKE_STEPS = ['chapter','specs','design','timeline','invoice'];
+let _intakeStep = 0;
+let _intakeDraftId = null;
+
+function pgQuote() {
+  _intakeStep = 0;
+  const prefillId = window._quotePrefillChapterId || null;
+  window._quotePrefillChapterId = null;
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>New Quote / Order Intake</h1><p>Guided intake — complete all steps to submit to design</p></div>
+    <div id="quoteMsg" class="err" style="display:none"></div>
+    <div class="wizard-steps" id="intakeWizardSteps"></div>
+    <div id="intakeStepContent"></div>
+    <div id="intakeActions" style="margin-top:20px"></div>
+  </div>`);
+  renderIntakeWizardSteps();
+  renderIntakeStep(prefillId);
+}
+
+function renderIntakeWizardSteps() {
+  const labels = ['Chapter & Event','Order Specs','Design Direction','Timeline & Delivery','Invoice & Contacts'];
+  const el = $('intakeWizardSteps'); if (!el) return;
+  el.innerHTML = INTAKE_STEPS.map((s, i) => `<div class="wizard-step ${i === _intakeStep ? 'active' : i < _intakeStep ? 'done' : ''}" onclick="setIntakeStep(${i})">${labels[i]}</div>`).join('');
+}
+
+function setIntakeStep(i) { _intakeStep = i; renderIntakeWizardSteps(); renderIntakeStep(null); }
+
+function renderIntakeStep(prefillChapterId) {
+  const content = $('intakeStepContent'); const actions = $('intakeActions'); if (!content) return;
+  if (_intakeStep === 0) {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Chapter & Event Info *</div>
+      <div class="form-group"><label>Chapter *</label><select class="form-select" id="q_chapter"><option value="">— Select or leave blank for ad‑hoc —</option></select></div>
+      <div class="form-row"><div class="form-group"><label>School / Client name *</label><input class="form-input" id="q_school" placeholder="e.g. Ohio State"></div><div class="form-group"><label>Chapter name *</label><input class="form-input" id="q_chapter_name" placeholder="e.g. Alpha Phi"></div></div>
+      <div class="form-row"><div class="form-group"><label>Event type *</label><select class="form-select" id="q_event_type"><option value="formal">Formal</option><option value="recruitment">Recruitment</option><option value="philanthropy">Philanthropy</option><option value="general">General</option><option value="other">Other</option></select></div><div class="form-group"><label>Event date</label><input class="form-input" id="q_event_date" type="date"></div></div>
+      </div></div>`;
+    loadChapterSelect(prefillChapterId);
+  } else if (_intakeStep === 1) {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Order Specs *</div>
+      <div class="form-row"><div class="form-group"><label>Garment type *</label><select class="form-select" id="q_garment"><option value="tee">T-Shirt</option><option value="hoodie">Hoodie</option><option value="crewneck">Crewneck</option><option value="tank">Tank</option><option value="longsleeve">Long Sleeve</option><option value="polo">Polo</option><option value="hat">Hat</option><option value="other">Other</option></select></div><div class="form-group"><label>Fit *</label><select class="form-select" id="q_fit"><option value="standard">Standard</option><option value="oversized">Oversized</option><option value="heavyweight">Heavyweight</option></select></div></div>
+      <div class="form-group"><label>Estimated qty range *</label><div class="form-row"><input class="form-input" id="q_qty_min" type="number" min="1" placeholder="Min"><input class="form-input" id="q_qty_max" type="number" min="1" placeholder="Max"></div></div>
+      <div class="form-group"><label>Garment colors (comma-separated) *</label><input class="form-input" id="q_colors" placeholder="e.g. Navy, White"></div>
+      <div class="form-group"><label>Print locations *</label><input class="form-input" id="q_print_locations" placeholder="e.g. front, back, sleeve"></div>
+      <div class="form-group"><label>Budget range *</label><select class="form-select" id="q_budget_range"><option value="under_20">Under $20</option><option value="20_25">$20–25</option><option value="25_30">$25–30</option><option value="open">Open</option></select></div>
+      </div></div>`;
+  } else if (_intakeStep === 2) {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Design Direction *</div>
+      <div class="form-group"><label>Design direction (2–3 sentences) *</label><textarea class="form-textarea" id="q_design_direction" placeholder="Describe the vibe, colors, placement..."></textarea></div>
+      <div class="form-group"><label>Required text *</label><input class="form-input" id="q_required_text" placeholder="Text that must appear"></div>
+      <div class="form-group"><label>Must-haves</label><textarea class="form-textarea" id="q_must_haves" style="min-height:60px"></textarea></div>
+      <div class="form-group"><label>Dealbreakers</label><textarea class="form-textarea" id="q_dealbreakers" style="min-height:60px"></textarea></div>
+      <div class="form-group"><label>Reference links (one per line, 2–5) *</label><textarea class="form-textarea" id="q_ref_links" placeholder="https://..."></textarea></div>
+      </div></div>`;
+  } else if (_intakeStep === 3) {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Timeline & Delivery *</div>
+      <div class="form-group"><label>Needed by date *</label><input class="form-input" id="q_needed_by" type="date" onchange="updateTimelineRisk()"></div>
+      <div id="timelineRiskBanner"></div>
+      <div class="form-group"><label>Delivery method *</label><select class="form-select" id="q_delivery"><option value="ship">Ship</option><option value="pickup">Pickup</option><option value="vendor">Vendor</option></select></div>
+      <div class="form-group"><label>Internal timeline notes</label><input class="form-input" id="q_timeline_notes" placeholder="SLA estimate etc."></div>
+      </div></div>`;
+  } else {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Invoice & Contacts *</div>
+      <div class="form-group"><label>Invoice email *</label><input class="form-input" id="q_invoice_email" type="email" placeholder="billing@chapter.org"></div>
+      <div class="form-group"><label>Primary contact name *</label><input class="form-input" id="q_contact_name" placeholder="Full name"></div>
+      <div class="form-group"><label>Primary contact phone *</label><input class="form-input" id="q_contact_phone" placeholder="Phone"></div>
+      </div></div>`;
+  }
+  const prev = _intakeStep > 0 ? `<button class="btn btn-ghost" onclick="setIntakeStep(${_intakeStep - 1})">← Back</button>` : '';
+  const next = _intakeStep < INTAKE_STEPS.length - 1 ? `<button class="btn btn-blue" onclick="setIntakeStep(${_intakeStep + 1})">Next →</button>` : '';
+  const draft = `<button class="btn btn-ghost" onclick="saveIntakeDraft()">Save Draft</button>`;
+  const submit = _intakeStep === INTAKE_STEPS.length - 1 ? `<button class="btn btn-green" id="btnSubmitToDesign" onclick="submitIntakeToDesign()">Submit to Design</button>` : '';
+  if (actions) actions.innerHTML = [prev, draft, next, submit].filter(Boolean).join(' ');
+  if (_intakeStep === 3) updateTimelineRisk();
+}
+
+async function loadChapterSelect(prefillId) {
+  let q = sb.from('chapters').select('id,chapter_name,school').order('chapter_name');
+  if (CP?.role === 'sales_rep') q = q.eq('assigned_sales_rep', CU.id);
+  const { data: list } = await q;
+  const sel = $('q_chapter'); if (!sel) return;
+  sel.innerHTML = '<option value="">— Select or leave blank —</option>' + (list || []).map(c => `<option value="${c.id}" ${prefillId === c.id ? 'selected' : ''}>${escapeHtml(c.chapter_name)} · ${escapeHtml(c.school || '')}</option>`).join('');
+  if (prefillId && list && list.find(c => c.id === prefillId)) { const c = list.find(x => x.id === prefillId); $('q_school').value = c.school || ''; $('q_chapter_name').value = c.chapter_name || ''; }
+}
+
+function updateTimelineRisk() {
+  const needed = v('q_needed_by'); const banner = $('timelineRiskBanner'); if (!banner) return;
+  if (!needed) { banner.innerHTML = ''; return; }
+  const days = Math.ceil((new Date(needed) - new Date()) / (24 * 60 * 60 * 1000));
+  let level = 'low', text = 'Comfortable timeline.';
+  if (days < 14) { level = 'high'; text = 'High risk — under 14 days. Expedite production.'; } else if (days < 21) { level = 'medium'; text = 'Medium risk — 2–3 weeks. Confirm production capacity.'; }
+  banner.innerHTML = `<div class="timeline-risk ${level}">${text} (${days} days until needed)</div>`;
+}
+
+function intakePayload() {
+  const refLinks = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  const needed = v('q_needed_by');
+  let timelineRisk = 'low';
+  if (needed) { const days = Math.ceil((new Date(needed) - new Date()) / (24 * 60 * 60 * 1000)); if (days < 14) timelineRisk = 'high'; else if (days < 21) timelineRisk = 'medium'; }
+  const chapterId = ($('q_chapter') && $('q_chapter').value) || null;
+  return {
+    chapter_id: chapterId || null,
+    client_name: v('q_chapter_name') || v('q_school') || '—',
+    organization: v('q_school'),
+    event_type: ($('q_event_type') && $('q_event_type').value) || 'general',
+    event_date: v('q_event_date') || null,
+    needed_by_date: needed || null,
+    timeline_date: needed,
+    delivery_method: ($('q_delivery') && $('q_delivery').value) || 'ship',
+    timeline_risk_level: timelineRisk,
+    invoice_email: v('q_invoice_email'),
+    budget_range: ($('q_budget_range') && $('q_budget_range').value) || 'open',
+    estimated_qty_min: parseInt(v('q_qty_min'), 10) || null,
+    estimated_qty_max: parseInt(v('q_qty_max'), 10) || null,
+    quantity: parseInt(v('q_qty_max'), 10) || parseInt(v('q_qty_min'), 10) || null,
+    garment_type: ($('q_garment') && $('q_garment').value) || 'tee',
+    fit_type: ($('q_fit') && $('q_fit').value) || 'standard',
+    garment_colors: (v('q_colors') || '').split(',').map(s => s.trim()).filter(Boolean),
+    print_locations: (v('q_print_locations') || '').split(',').map(s => s.trim()).filter(Boolean),
+    design_direction: v('q_design_direction'),
+    required_text: v('q_required_text'),
+    must_haves: v('q_must_haves'),
+    dealbreakers: v('q_dealbreakers'),
+    reference_links: refLinks,
+    internal_notes: v('q_timeline_notes'),
+    created_by: CU.id,
+    rep_id: CU.id,
+    assigned_sales_rep: CU.id,
+    status: 'intake',
+  };
+}
+
+function intakeRequiredOk() {
+  const ch = v('q_school') || v('q_chapter_name');
+  const needed = v('q_needed_by');
+  const design = v('q_design_direction');
+  const refs = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  const required = v('q_required_text');
+  const invoice = v('q_invoice_email');
+  const contact = v('q_contact_name');
+  const phone = v('q_contact_phone');
+  const qtyMin = parseInt(v('q_qty_min'), 10);
+  const qtyMax = parseInt(v('q_qty_max'), 10);
+  return !!ch && !!needed && !!design && refs.length >= 2 && refs.length <= 5 && !!required && !!invoice && !!contact && !!phone && qtyMin >= 1 && qtyMax >= qtyMin;
+}
+
+async function saveIntakeDraft() {
+  const msg = $('quoteMsg'); msg.style.display = 'none';
+  const payload = intakePayload();
+  if (_intakeDraftId) {
+    const { error } = await sb.from('orders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', _intakeDraftId);
+    if (error) { showErr(msg, error.message); return; }
+    msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Draft updated.';
+    return;
+  }
+  const { data: row, error } = await sb.from('orders').insert(payload).select('id').single();
+  if (error) { showErr(msg, error.message); return; }
+  _intakeDraftId = row.id;
+  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Draft saved. Continue and submit when ready.';
+}
+
+async function submitIntakeToDesign() {
+  const msg = $('quoteMsg'); msg.style.display = 'none';
+  if (!intakeRequiredOk()) { showErr(msg, 'Complete all required fields across steps (chapter/school, needed-by date, design direction, 2–5 ref links, required text, invoice email, contact name & phone, qty range).'); return; }
+  const payload = intakePayload();
+  payload.status = 'quote';
+  let orderId = _intakeDraftId;
+  if (orderId) {
+    const { error } = await sb.from('orders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', orderId);
+    if (error) { showErr(msg, error.message); return; }
+  } else {
+    const { data: row, error } = await sb.from('orders').insert(payload).select('id').single();
+    if (error) { showErr(msg, error.message); return; }
+    orderId = row.id;
+  }
+  const { error: drErr } = await sb.from('design_requests').insert({ order_id: orderId, status: 'pending' });
+  if (drErr) console.error('[Intake] design_request', drErr);
+  _intakeDraftId = null;
+  msg.className = 'suc'; msg.style.cssText = 'display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
+  msg.textContent = '✅ Submitted to design. Redirecting...';
   setTimeout(() => go('dashboard'), 1400);
 }
 
@@ -630,11 +974,12 @@ async function pgDesignQueue() {
     <div class="card-grid" id="dqCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
 
-  const { data: orders } = await sb.from('orders').select('*')
+  const { data: orders, error: dqErr } = await sb.from('orders').select('*')
     .in('status', ['intake','quote','design','production'])
     .order('is_rush', { ascending: false })
     .order('created_at', { ascending: true });
 
+  if (dqErr) { console.error('[DesignQueue]', dqErr); const errEl = document.createElement('div'); errEl.className = 'err'; errEl.style.marginBottom = '16px'; errEl.textContent = dqErr.message; $('dqCards').innerHTML = ''; $('dqStats').parentElement.insertBefore(errEl, $('dqStats')); const se = $('dqStats'); if (se) se.innerHTML = '<div class="stat-card"><div class="stat-label">Error</div></div>'; return; }
   window._dqAll = orders || [];
   dqRender(window._dqAll);
 
@@ -692,10 +1037,11 @@ async function pgApprovals() {
     <div class="card-grid" id="apCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
 
-  const { data: orders } = await sb.from('orders').select('*')
+  const { data: orders, error: apErr } = await sb.from('orders').select('*')
     .in('status', ['design','production'])
     .order('created_at', { ascending: false });
 
+  if (apErr) { console.error('[Approvals]', apErr); mc('apStats', ''); mc('apCards', '<div class="err">' + apErr.message + '</div>'); return; }
   const list = orders || [];
   const apStatsEl = $('apStats'); if (apStatsEl) apStatsEl.innerHTML = `
     <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.status === 'design').length}</div><div class="stat-label">Awaiting Approval</div></div></div>
@@ -744,10 +1090,11 @@ async function pgFulfillment() {
     <div class="card-grid" id="ffCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
 
-  const { data: orders } = await sb.from('orders').select('*')
+  const { data: orders, error: ffErr } = await sb.from('orders').select('*')
     .in('status', ['production','fulfillment','complete'])
     .order('created_at', { ascending: false });
 
+  if (ffErr) { console.error('[Fulfillment]', ffErr); const fe = $('ffStats'); const fc = $('ffCards'); if (fe) fe.innerHTML = '<div class="stat-card"><div class="stat-label">Error</div></div>'; if (fc) fc.innerHTML = '<div class="err">' + ffErr.message + '</div>'; return; }
   window._ffAll = orders || [];
   ffRender(window._ffAll.filter(o => o.status !== 'complete'));
 
@@ -797,137 +1144,227 @@ async function ffAdvance(id, status) {
 // ═══════════════════ STOREFRONT ═══════════════════
 function pgStorefront() {
   mc('mainContent', `<div class="page">
-    <div class="header-row">
-      <div class="page-header" style="margin-bottom:0"><h1>Storefront</h1><p>Manage products and chapter assignments</p></div>
-      <button class="btn-sm-blue" onclick="openAddProduct()">+ Add Product</button>
-    </div><br>
-    <div class="stat-grid" id="sfStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="page-header"><h1>Storefront Builder</h1><p>Per-chapter storefronts and product catalog</p></div>
+    <div id="sfErr" class="err" style="display:none"></div>
     <div class="tab-bar">
-      <div class="tab active" onclick="setTab(this.parentElement,this,()=>sfRender('all'))">All</div>
-      <div class="tab" onclick="setTab(this.parentElement,this,()=>sfRender('active'))">Active</div>
-      <div class="tab" onclick="setTab(this.parentElement,this,()=>sfRender('inactive'))">Inactive</div>
+      <div class="tab active" onclick="setTab(this.parentElement,this,()=>sfShowBuilder())">Storefronts</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>sfShowProducts())">Products</div>
+    </div>
+    <div id="sfBuilder">
+      <div class="form-card" style="margin-bottom:20px">
+        <div class="form-section-title">Choose Chapter</div>
+        <select class="form-select" id="sfChapter" onchange="sfOnChapterChange()"><option value="">— Select chapter —</option></select>
+      </div>
+      <div id="sfStorefrontPanel" style="display:none">
+        <div class="section-card"><div class="section-title">Storefront</div><div id="sfStorefrontList"></div><button class="btn btn-blue btn-sm" onclick="sfCreateStorefront()">+ Create Storefront</button></div>
+        <div id="sfStorefrontDetail" style="display:none"><div class="section-card"><div class="section-title" id="sfDetailTitle">Storefront name</div><div id="sfProductsInStorefront"></div><button class="btn btn-ghost btn-sm" onclick="sfAddProductToStorefront()">+ Add Product</button><div style="margin-top:12px"><label>Shareable link</label><div style="display:flex;gap:8px;align-items:center"><input class="form-input" id="sfShareLink" readonly style="flex:1"><button class="btn btn-ghost btn-sm" onclick="sfCopyLink()">Copy</button></div></div><button class="btn btn-green btn-sm" style="margin-top:8px" onclick="sfPublish()">Publish</button></div></div>
+      </div>
+      <div id="sfProductsArea" style="display:none"></div>
     </div>
     <div id="sfProducts"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
-  loadStorefront();
+  sfShowBuilder();
 }
 
-async function loadStorefront() {
-  // For now products are managed as a simple in-memory list
-  // In next iteration this will be a real products table
-  const products = window._products || [];
-  const active = products.filter(p => p.active).length;
-  const sfStatsEl = $('sfStats'); if (sfStatsEl) sfStatsEl.innerHTML = `
-    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${products.length}</div><div class="stat-label">Products</div></div></div>
-    <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${active}</div><div class="stat-label">Active</div></div></div>
-    <div class="stat-card"><div class="stat-bar" style="background:#9ca3af"></div><div><div class="stat-num">${products.length - active}</div><div class="stat-label">Inactive</div></div></div>`;
-  sfRender('all');
+async function sfShowBuilder() {
+  $('sfBuilder').style.display = 'block'; $('sfProducts').style.display = 'none';
+  let q = sb.from('chapters').select('id,chapter_name,school').order('chapter_name');
+  if (CP?.role === 'sales_rep') q = q.eq('assigned_sales_rep', CU.id);
+  const { data: ch } = await q;
+  const sel = $('sfChapter'); if (sel) sel.innerHTML = '<option value="">— Select chapter —</option>' + (ch || []).map(c => `<option value="${c.id}">${escapeHtml(c.chapter_name)} · ${escapeHtml(c.school || '')}</option>`).join('');
 }
 
-function sfRender(filter) {
-  const products = window._products || [];
-  const list = filter === 'active' ? products.filter(p => p.active)
-    : filter === 'inactive' ? products.filter(p => !p.active) : products;
-  if (!list.length) {
-    $('sfProducts').innerHTML = emptyState(
-      filter === 'all' ? 'No products yet. Add your first product.' : `No ${filter} products.`,
-      filter === 'all' ? '+ Add First Product' : null,
-      "openAddProduct()"
-    );
-    return;
-  }
-  const sfEl = $('sfProducts'); if (sfEl) sfEl.innerHTML = `<div class="card-grid">${list.map((p, i) => `
-    <div class="order-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <span style="font-size:15px;font-weight:600;color:#111827">${escapeHtml(p.name)}</span>
-        <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:#0f75bc">$${escapeHtml(p.price)}</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div>
-      </div>
-      <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${escapeHtml(p.category || '')} · ${p.active ? '<span style="color:#16a34a">Active</span>' : '<span style="color:#9ca3af">Inactive</span>'}</div>
-      <div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5">${escapeHtml(p.desc || '')}</div>
-      <div class="btn-row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="toggleProduct(${i})">${p.active ? 'Deactivate' : 'Activate'}</button>
-        <button class="btn btn-red btn-full btn-sm" onclick="removeProduct(${i})">Remove</button>
-      </div>
-    </div>`).join('')}</div>`;
+async function sfShowProducts() {
+  $('sfBuilder').style.display = 'none'; $('sfProducts').style.display = 'block';
+  const el = $('sfProducts'); if (!el) return;
+  try {
+    const { data: products, error } = await sb.from('products').select('*').order('name');
+    if (error) throw error;
+    const list = products || [];
+    if (!list.length) { el.innerHTML = emptyState('No products yet.', '+ Add Product', "openAddProduct()"); return; }
+    el.innerHTML = `<div class="card-grid">${list.map(p => `
+      <div class="order-card">
+        <div style="font-size:15px;font-weight:600">${escapeHtml(p.name)}</div>
+        <div style="font-size:12px;color:#9ca3af">${escapeHtml(p.category || '')} · $${Number(p.base_price || 0).toFixed(2)}</div>
+        <div style="font-size:12px;color:#6b7280;margin:8px 0">${escapeHtml((p.short_description || p.description || '').slice(0,80))}...</div>
+        <div class="btn-row"><button class="btn btn-ghost btn-sm" onclick="openEditProduct('${p.id}')">Edit</button><button class="btn btn-red btn-sm" onclick="sfToggleProduct('${p.id}',${!p.active})">${p.active ? 'Deactivate' : 'Activate'}</button></div>
+      </div>`).join('')}</div><button class="btn btn-blue btn-sm" style="margin-top:12px" onclick="openAddProduct()">+ Add Product</button>`;
+  } catch (e) { console.error('[Storefront]', e); el.innerHTML = emptyState('Failed to load products.', null, null); }
 }
 
-function openAddProduct() {
-  const modal = document.createElement('div');
-  modal.className = 'modal-bg open';
-  modal.id = 'addProductModal';
-  modal.innerHTML = `<div class="modal">
-    <div class="modal-header"><h2>Add Product</h2><button class="modal-close" onclick="$('addProductModal').remove()">×</button></div>
-    <div id="apMsg"></div>
-    <div class="form-group"><label>Product Name *</label><input class="form-input" id="ap_name" placeholder="e.g. Classic T-Shirt"></div>
-    <div class="form-row">
-      <div class="form-group"><label>Base Price ($) *</label><input class="form-input" id="ap_price" type="number" placeholder="e.g. 18.50"></div>
-      <div class="form-group"><label>Category</label><select class="form-select" id="ap_cat"><option>Apparel</option><option>Headwear</option><option>Bags</option><option>Accessories</option></select></div>
-    </div>
-    <div class="form-group"><label>Description</label><textarea class="form-textarea" id="ap_desc" placeholder="Describe the product..."></textarea></div>
-    <div class="btn-row" style="margin-top:4px">
-      <button class="btn btn-ghost btn-full" onclick="$('addProductModal').remove()">Cancel</button>
-      <button class="btn btn-blue btn-full" onclick="saveProduct()">Add Product</button>
-    </div>
-  </div>`;
+function sfOnChapterChange() {
+  const id = ($('sfChapter') && $('sfChapter').value) || '';
+  const panel = $('sfStorefrontPanel'); const detail = $('sfStorefrontDetail');
+  if (!panel) return;
+  panel.style.display = id ? 'block' : 'none';
+  if (!id) { detail.style.display = 'none'; return; }
+  window._sfChapterId = id;
+  loadStorefrontsForChapter(id);
+}
+
+async function loadStorefrontsForChapter(chapterId) {
+  const listEl = $('sfStorefrontList'); if (!listEl) return;
+  const { data: list, error } = await sb.from('storefronts').select('*').eq('chapter_id', chapterId).order('created_at', { ascending: false });
+  if (error) { listEl.innerHTML = '<p class="err">Failed to load.</p>'; return; }
+  if (!list || !list.length) { listEl.innerHTML = '<p style="color:#6b7280">No storefronts. Create one.</p>'; return; }
+  listEl.innerHTML = list.map(s => `<div class="activity-item" onclick="sfOpenStorefront('${s.id}')"><div><strong>${escapeHtml(s.name)}</strong><span style="font-size:11px;color:#9ca3af"> ${s.is_active ? '· Live' : '· Draft'}</span></div>${s.public_token ? '<span class="pill pill-complete">Has link</span>' : ''}</div>`).join('');
+}
+
+function sfCreateStorefront() {
+  const chId = window._sfChapterId; if (!chId) return;
+  const name = prompt('Storefront name:', 'Spring 2026');
+  if (!name) return;
+  const token = Array.from(crypto.getRandomValues(new Uint8Array(32))).map(b => b.toString(16).padStart(2,'0')).join('');
+  sb.from('storefronts').insert({ chapter_id: chId, name, public_token: token, is_active: false }).select('id').single().then(({ data }) => { if (data) loadStorefrontsForChapter(chId); });
+}
+
+let _sfCurrentStorefrontId = null;
+async function sfOpenStorefront(id) {
+  _sfCurrentStorefrontId = id;
+  const detail = $('sfStorefrontDetail'); const title = $('sfDetailTitle'); const link = $('sfShareLink');
+  if (!detail) return;
+  detail.style.display = 'block';
+  const { data: s } = await sb.from('storefronts').select('*').eq('id', id).single();
+  if (s) { if (title) title.textContent = s.name; if (link) link.value = window.location.origin + window.location.pathname + '?storefront_token=' + (s.public_token || ''); }
+  const { data: sp } = await sb.from('storefront_products').select('*, products(*)').eq('storefront_id', id).order('sort_order');
+  const productsEl = $('sfProductsInStorefront');
+  if (productsEl) productsEl.innerHTML = (sp || []).map(x => `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #f3f4f6">${escapeHtml(x.products?.name || '—')} · $${Number(x.price_override ?? x.products?.base_price ?? 0).toFixed(2)} <button class="btn btn-ghost btn-sm" onclick="sfRemoveProductFromStorefront('${x.id}')">Remove</button></div>`).join('') || '<p style="color:#9ca3af">No products. Add products from catalog.</p>';
+}
+
+async function sfAddProductToStorefront() {
+  if (!_sfCurrentStorefrontId) return;
+  const { data: prods } = await sb.from('products').select('id,name,base_price').eq('active', true);
+  window._sfProductsCatalog = prods || [];
+  const opts = (prods || []).map(p => `<option value="${p.id}">${escapeHtml(p.name)} — $${Number(p.base_price).toFixed(2)}</option>`).join('');
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'sfAddProdModal';
+  modal.innerHTML = `<div class="modal"><div class="modal-header"><h2>Add product</h2><button class="modal-close" onclick="$('sfAddProdModal').remove()">×</button></div>${opts ? '<select class="form-select" id="sfAddProdSelect">'+opts+'</select>' : '<p style="color:#6b7280">No active products. Add products in the Products tab first.</p>'}<button class="btn btn-blue btn-full" style="margin-top:12px" onclick="sfAddProductConfirm()">Add</button></div>`;
   document.body.appendChild(modal);
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
-function saveProduct() {
-  const name = v('ap_name'), price = v('ap_price');
-  const msg = $('apMsg');
-  if (!name || !price) { showErr(msg, 'Name and price are required'); return; }
-  const catEl = $('ap_cat');
-  if (!window._products) window._products = [];
-  window._products.push({ name, price: parseFloat(price).toFixed(2), category: catEl ? catEl.value : 'Apparel', desc: v('ap_desc'), active: true });
-  const modal = $('addProductModal'); if (modal) modal.remove();
-  loadStorefront();
+function sfAddProductConfirm() {
+  const sel = $('sfAddProdSelect'); const pid = sel && sel.value;
+  if (!pid || !_sfCurrentStorefrontId) return;
+  sb.from('storefront_products').insert({ storefront_id: _sfCurrentStorefrontId, product_id: pid }).then(() => { $('sfAddProdModal')?.remove(); sfOpenStorefront(_sfCurrentStorefrontId); });
 }
 
-function toggleProduct(i) {
-  window._products[i].active = !window._products[i].active;
-  sfRender('all');
+async function sfRemoveProductFromStorefront(spId) {
+  await sb.from('storefront_products').delete().eq('id', spId);
+  sfOpenStorefront(_sfCurrentStorefrontId);
 }
-function removeProduct(i) {
-  if (!confirm('Remove this product?')) return;
-  window._products.splice(i, 1);
-  loadStorefront();
+
+function sfCopyLink() {
+  const input = $('sfShareLink'); if (input && input.value) { input.select(); document.execCommand('copy'); }
+}
+
+function sfPublish() {
+  if (!_sfCurrentStorefrontId) return;
+  sb.from('storefronts').update({ is_active: true }).eq('id', _sfCurrentStorefrontId).then(() => sfOpenStorefront(_sfCurrentStorefrontId));
+}
+
+function sfToggleProduct(pid, active) {
+  sb.from('products').update({ active }).eq('id', pid).then(() => sfShowProducts());
+}
+
+function openAddProduct() {
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'addProductModal';
+  modal.innerHTML = `<div class="modal" style="max-width:560px"><div class="modal-header"><h2>Add Product</h2><button class="modal-close" onclick="$('addProductModal').remove()">×</button></div><div id="apMsg" class="err" style="display:none"></div>
+  <div class="form-group"><label>Name *</label><input class="form-input" id="ap_name" placeholder="e.g. Classic Tee"></div>
+  <div class="form-row"><div class="form-group"><label>Base price ($) *</label><input class="form-input" id="ap_price" type="number" step="0.01"></div><div class="form-group"><label>Category</label><select class="form-select" id="ap_cat"><option>Apparel</option><option>Headwear</option><option>Bags</option><option>Accessories</option></select></div></div>
+  <div class="form-group"><label>Short description</label><input class="form-input" id="ap_short_desc"></div>
+  <div class="form-group"><label>Description</label><textarea class="form-textarea" id="ap_desc"></textarea></div>
+  <div class="form-group"><label>Production method</label><select class="form-select" id="ap_prod_method"><option>Screen Print</option><option>Embroidery</option><option>DTG</option></select></div>
+  <button class="btn btn-blue btn-full" onclick="saveProduct()">Save Product</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+function openEditProduct(pid) {
+  sb.from('products').select('*').eq('id', pid).single().then(({ data: p }) => {
+    if (!p) return;
+    const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'editProductModal';
+    modal.innerHTML = `<div class="modal" style="max-width:560px"><div class="modal-header"><h2>Edit Product</h2><button class="modal-close" onclick="$('editProductModal').remove()">×</button></div><div id="epMsg" class="err" style="display:none"></div>
+    <input type="hidden" id="ep_id" value="${p.id}">
+    <div class="form-group"><label>Name *</label><input class="form-input" id="ep_name" value="${escapeHtml(p.name || '')}"></div>
+    <div class="form-row"><div class="form-group"><label>Base price ($) *</label><input class="form-input" id="ep_price" type="number" step="0.01" value="${p.base_price ?? ''}"></div><div class="form-group"><label>Category</label><select class="form-select" id="ep_cat"><option>Apparel</option><option>Headwear</option><option>Bags</option><option>Accessories</option></select></div></div>
+    <div class="form-group"><label>Short description</label><input class="form-input" id="ep_short_desc" value="${escapeHtml(p.short_description || '')}"></div>
+    <div class="form-group"><label>Description</label><textarea class="form-textarea" id="ep_desc">${escapeHtml(p.description || '')}</textarea></div>
+    <button class="btn btn-blue btn-full" onclick="saveProductEdit()">Save</button></div>`;
+    document.body.appendChild(modal);
+    const cat = $('ep_cat'); if (cat && p.category) cat.value = p.category;
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  });
+}
+
+async function saveProduct() {
+  const name = v('ap_name'), price = v('ap_price'); const msg = $('apMsg');
+  if (!name || !price) { showErr(msg, 'Name and price required'); return; }
+  const { error } = await sb.from('products').insert({ name, base_price: parseFloat(price), category: ($('ap_cat') && $('ap_cat').value) || 'Apparel', short_description: v('ap_short_desc'), description: v('ap_desc'), production_method: ($('ap_prod_method') && $('ap_prod_method').value) || 'Screen Print', active: true });
+  if (error) { showErr(msg, error.message); return; }
+  $('addProductModal')?.remove(); sfShowProducts();
+}
+
+async function saveProductEdit() {
+  const id = v('ep_id'); const name = v('ep_name'); const price = v('ep_price'); const msg = $('epMsg');
+  if (!id || !name || !price) { showErr(msg, 'Name and price required'); return; }
+  const { error } = await sb.from('products').update({ name, base_price: parseFloat(price), category: ($('ep_cat') && $('ep_cat').value) || 'Apparel', short_description: v('ep_short_desc'), description: v('ep_desc') }).eq('id', id);
+  if (error) { showErr(msg, error.message); return; }
+  $('editProductModal')?.remove(); sfShowProducts();
 }
 
 // ═══════════════════ ADMIN ═══════════════════
 async function pgAdmin() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>Admin Dashboard</h1><p>System oversight and business metrics</p></div>
+    <div class="page-header"><h1>Admin Dashboard</h1><p>System oversight and delivery-focused metrics</p></div>
+    <div id="adErr" class="err" style="display:none"></div>
     <div class="flag-grid" id="adFlags"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
     <div class="two-col">
-      <div class="section-card"><div class="section-title">All Orders</div><div class="section-sub">Complete pipeline view</div><div id="adOrders"><div class="spinner-sm"></div></div></div>
-      <div class="section-card"><div class="section-title">Business Metrics</div><div class="section-sub">Key performance indicators</div><div id="adMetrics"><div class="spinner-sm"></div></div></div>
+      <div class="section-card"><div class="section-title">All Orders</div><div class="section-sub">Pipeline view</div><div id="adOrders"><div class="spinner-sm"></div></div></div>
+      <div class="section-card"><div class="section-title">Business Metrics</div><div class="section-sub">Timeline & delivery</div><div id="adMetrics"><div class="spinner-sm"></div></div></div>
     </div>
+    <div class="section-card" style="margin-top:16px"><div class="section-title">Recent Activity</div><div id="adActivity"><div class="spinner-sm"></div></div></div>
   </div>`);
 
-  const { data: orders } = await sb.from('orders').select('*').order('created_at', { ascending: false });
-  const list = orders || [];
-  const rush = list.filter(o => o.is_rush && o.status !== 'complete' && o.status !== 'cancelled').length;
+  const adErr = $('adErr'); const adFlagsEl = $('adFlags'); const adOrdersEl = $('adOrders'); const adMetricsEl = $('adMetrics'); const adActivity = $('adActivity');
+  try {
+    const { data: orders, error } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    const list = orders || [];
+    const now = Date.now(); const day = 24 * 60 * 60 * 1000;
+    const due7 = list.filter(o => o.needed_by_date && !['complete','cancelled'].includes(o.status) && (new Date(o.needed_by_date) - now) <= 7 * day).length;
+    const due14 = list.filter(o => o.needed_by_date && !['complete','cancelled'].includes(o.status) && (new Date(o.needed_by_date) - now) <= 14 * day).length;
+    const byStatus = {}; STATUS_FLOW.forEach(s => byStatus[s] = 0); list.forEach(o => { if (byStatus[o.status] !== undefined) byStatus[o.status]++; });
+    if (adFlagsEl) adFlagsEl.innerHTML = `
+      <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">${due7}</div><div class="flag-label">Due in 7 days</div></div></div>
+      <div class="flag-card"><div class="flag-bar" style="background:#d97706"></div><div><div class="flag-num">${due14}</div><div class="flag-label">Due in 14 days</div></div></div>
+      <div class="flag-card"><div class="flag-bar" style="background:#7c3aed"></div><div><div class="flag-num">${byStatus.design || 0}</div><div class="flag-label">In Design</div></div></div>
+      <div class="flag-card"><div class="flag-bar" style="background:#16a34a"></div><div><div class="flag-num">${byStatus.complete || 0}</div><div class="flag-label">Completed</div></div></div>`;
 
-  const adFlagsEl = $('adFlags'); if (adFlagsEl) adFlagsEl.innerHTML = `
-    <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">${rush}</div><div class="flag-label">Active Rush Orders</div></div></div>
-    <div class="flag-card"><div class="flag-bar" style="background:#d97706"></div><div><div class="flag-num">${list.filter(o => o.status === 'intake').length}</div><div class="flag-label">New Intakes</div></div></div>
-    <div class="flag-card"><div class="flag-bar" style="background:#7c3aed"></div><div><div class="flag-num">${list.filter(o => o.status === 'design').length}</div><div class="flag-label">In Design</div></div></div>
-    <div class="flag-card"><div class="flag-bar" style="background:#16a34a"></div><div><div class="flag-num">${list.filter(o => o.status === 'complete').length}</div><div class="flag-label">Completed</div></div></div>`;
+    if (adOrdersEl) adOrdersEl.innerHTML = list.length ? list.slice(0, 12).map(o => `
+      <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
+        <div style="flex:1"><strong style="font-size:13px">${escapeHtml(o.client_name || '—')}</strong><span style="font-size:11px;color:#9ca3af;display:block">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'}</span></div>
+        ${pill(o.status)}
+      </div>`).join('') : emptyState('No orders yet.', null, null);
 
-  const adOrdersEl = $('adOrders'); if (adOrdersEl) adOrdersEl.innerHTML = list.length ? list.slice(0, 12).map(o => `
-    <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
-      <div style="flex:1"><strong style="font-size:13px">${escapeHtml(o.client_name)}</strong><span style="font-size:11px;color:#9ca3af;display:block">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'}</span></div>
-      ${pill(o.status)}
-    </div>`).join('') : emptyState('No orders yet.', null, null);
+    const revenue = list.reduce((s, o) => s + (Number(o.budget) || Number(o.quote_total) || 0), 0);
+    const avgQty = list.length ? Math.round(list.reduce((s, o) => s + (o.quantity || 0), 0) / list.length) : 0;
+    const fulfillmentQueue = list.filter(o => o.status === 'production' || o.status === 'fulfillment').length;
+    if (adMetricsEl) adMetricsEl.innerHTML = `
+      <div class="metric-card"><div><div class="metric-label">Total Orders</div><div class="metric-val">${list.length}</div></div><span style="font-size:20px">📋</span></div>
+      <div class="metric-card"><div><div class="metric-label">Pipeline Value</div><div class="metric-val">$${revenue.toLocaleString()}</div></div><span style="font-size:20px">💵</span></div>
+      <div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">${avgQty} units</div></div><span style="font-size:20px">📦</span></div>
+      <div class="metric-card"><div><div class="metric-label">Fulfillment Queue</div><div class="metric-val">${fulfillmentQueue}</div></div><span style="font-size:20px">📤</span></div>`;
 
-  const revenue = list.reduce((s, o) => s + (o.budget || 0), 0);
-  const avgQty = list.length ? Math.round(list.reduce((s, o) => s + (o.quantity || 0), 0) / list.length) : 0;
-  const adMetricsEl = $('adMetrics'); if (adMetricsEl) adMetricsEl.innerHTML = `
-    <div class="metric-card"><div><div class="metric-label">Total Orders</div><div class="metric-val">${list.length}</div></div><span style="font-size:20px">📋</span></div>
-    <div class="metric-card"><div><div class="metric-label">Pipeline Value</div><div class="metric-val">$${revenue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280">Client budgets</div></div><span style="font-size:20px">💵</span></div>
-    <div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">${avgQty} units</div></div><span style="font-size:20px">📦</span></div>
-    <div class="metric-card"><div><div class="metric-label">Rush Orders Active</div><div class="metric-val">${rush}</div></div><span style="font-size:20px">⚡</span></div>`;
+    const recent = list.slice(0, 8).map(o => ({ ...o, _label: o.client_name || o.order_number || o.id }));
+    if (adActivity) adActivity.innerHTML = recent.length ? recent.map(o => `<div class="activity-item" onclick="openOrder('${o.id}')"><div style="flex:1"><strong>${escapeHtml(o._label)}</strong><span style="font-size:11px;color:#9ca3af">${o.status} · ${timeAgo(o.updated_at || o.created_at)}</span></div>${pill(o.status)}</div>`).join('') : '<p style="color:#9ca3af">No activity yet.</p>';
+  } catch (e) {
+    console.error('[Admin]', e);
+    if (adErr) { adErr.textContent = e.message || 'Failed to load.'; adErr.style.display = 'block'; }
+    if (adFlagsEl) adFlagsEl.innerHTML = '<div class="flag-card"><div class="flag-label">No data</div></div>';
+    if (adOrdersEl) adOrdersEl.innerHTML = emptyState('Could not load orders.', null, null);
+    if (adMetricsEl) adMetricsEl.innerHTML = '<div class="metric-card"><div class="metric-label">Error</div></div>';
+    if (adActivity) adActivity.innerHTML = '<p style="color:#9ca3af">No data.</p>';
+  }
 }
 
 // ═══════════════════ TEAM ═══════════════════
@@ -980,7 +1417,9 @@ async function pgTeam() {
 
 async function loadTeam() {
   const { data: members } = await sb.from('users').select('*').order('created_at', { ascending: true });
-  const m = members || [];
+  const { data: statsRows } = await sb.from('user_stats').select('*');
+  const statsByUser = {}; (statsRows || []).forEach(s => { statsByUser[s.user_id] = s; });
+  const m = (members || []).map(u => ({ ...u, _stats: statsByUser[u.id] }));
 
   const tmStatsEl = $('tmStats'); if (tmStatsEl) tmStatsEl.innerHTML = `
     <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${m.length}</div><div class="stat-label">Total Members</div></div></div>
@@ -988,6 +1427,7 @@ async function loadTeam() {
     <div class="stat-card"><div class="stat-bar" style="background:#2563eb"></div><div><div class="stat-num">${m.filter(x => x.role === 'sales_rep').length}</div><div class="stat-label">Sales Reps</div></div></div>
     <div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">${m.filter(x => x.role === 'designer').length}</div><div class="stat-label">Designers</div></div></div>`;
 
+  window._teamMembers = m;
   if (!m.length) { mc('tmList', emptyState('No team members yet.', null, null)); return; }
 
   const tmListEl = $('tmList'); if (!tmListEl) return;
@@ -1013,7 +1453,7 @@ async function loadTeam() {
         </select>
       </td>
       <td style="color:#9ca3af;font-size:12px">${fmtDate(u.created_at)}</td>
-      <td>${u.id !== CU.id ? `<button class="btn btn-red btn-sm" onclick="removeMember('${u.id}','${escJs(u.full_name || u.email)}')">Remove</button>` : '—'}</td>
+      <td>${u.id !== CU.id ? `<button class="btn btn-ghost btn-sm" onclick="openEditMember('${u.id}')">Edit</button> <button class="btn btn-red btn-sm" onclick="removeMember('${u.id}','${escJs(u.full_name || u.email)}')">Remove</button>` : '—'}</td>
     </tr>`).join('')}
     </tbody>
   </table>`;
@@ -1062,6 +1502,40 @@ async function createMember() {
 async function updateRole(userId, newRole) {
   const { error } = await sb.from('users').update({ role: newRole }).eq('id', userId);
   if (error) alert('Error updating role: ' + error.message);
+}
+
+function openEditMember(userId) {
+  const u = (window._teamMembers || []).find(x => x.id === userId); if (!u) return;
+  const perms = (u.permissions && typeof u.permissions === 'object') ? JSON.stringify(u.permissions, null, 2) : '{}';
+  const st = u._stats || {};
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'editMemberModal';
+  modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Edit member</h2><button class="modal-close" onclick="$('editMemberModal').remove()">×</button></div>
+  <div id="emMsg" class="err" style="display:none"></div>
+  <p style="font-weight:600;margin-bottom:8px">${escapeHtml(u.full_name || u.email)}</p>
+  <div class="form-group"><label>Role</label><select class="form-select" id="em_role"><option value="sales_rep">Sales Rep</option><option value="designer">Designer</option><option value="fulfillment">Fulfillment</option><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select></div>
+  <div class="form-group"><label>Permissions (JSON)</label><textarea class="form-textarea" id="em_permissions" style="min-height:60px;font-size:12px">${escapeHtml(perms)}</textarea></div>
+  <div class="form-section-title">Stats</div>
+  <div class="form-row"><div class="form-group"><label>Orders count</label><input class="form-input" id="em_orders_count" type="number" value="${st.orders_count ?? 0}"></div><div class="form-group"><label>Revenue</label><input class="form-input" id="em_revenue" type="number" step="0.01" value="${st.revenue ?? 0}"></div></div>
+  <div class="form-group"><label>Design count</label><input class="form-input" id="em_design_count" type="number" value="${st.design_count ?? 0}"></div>
+  <button class="btn btn-blue btn-full" onclick="saveEditMember('${userId}')">Save</button></div>`;
+  document.body.appendChild(modal);
+  const roleEl = $('em_role'); if (roleEl && u.role) roleEl.value = u.role;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function saveEditMember(userId) {
+  const msg = $('emMsg');
+  let perms = {};
+  try { perms = JSON.parse(v('em_permissions') || '{}'); } catch (e) { showErr(msg, 'Invalid JSON for permissions'); return; }
+  const role = ($('em_role') && $('em_role').value) || 'sales_rep';
+  const ordersCount = parseInt(v('em_orders_count'), 10) || 0;
+  const revenue = parseFloat(v('em_revenue')) || 0;
+  const designCount = parseInt(v('em_design_count'), 10) || 0;
+  const { error: uErr } = await sb.from('users').update({ role, permissions: perms }).eq('id', userId);
+  if (uErr) { showErr(msg, uErr.message); return; }
+  await sb.from('user_stats').upsert({ user_id: userId, orders_count: ordersCount, revenue, design_count: designCount, updated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  $('editMemberModal')?.remove();
+  loadTeam();
 }
 
 async function removeMember(userId, name) {
