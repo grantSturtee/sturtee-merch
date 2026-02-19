@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Sturtee Merch Portal</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -12,7 +12,8 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .app{display:flex;height:100vh;overflow:hidden}
 .sidebar{width:230px;flex-shrink:0;background:#fff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;overflow-y:auto}
 .main-content{flex:1;overflow-y:auto;padding:32px 36px}
-.top-bar{background:#f8f9fa;border-bottom:1px solid #dee2e6;padding:8px 20px;font-size:12px;color:#9ca3af}
+.top-bar{background:#f8f9fa;border-bottom:1px solid #dee2e6;padding:8px 20px;font-size:12px;color:#9ca3af;letter-spacing:.01em}
+/* sidebar */
 .sidebar-brand{padding:20px 20px 12px;border-bottom:1px solid #f3f4f6}
 .sidebar-brand h2{font-size:16px;font-weight:700;color:#111827}
 .sidebar-brand p{font-size:11px;color:#9ca3af;margin-top:2px}
@@ -26,7 +27,7 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .badge-fulfillment{background:#dcfce7;color:#16a34a}
 .badge-super_admin{background:#0f75bc;color:#fff}
 .nav{padding:12px 0;flex:1}
-.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:#4b5563;cursor:pointer;transition:background .15s}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13.5px;color:#4b5563;cursor:pointer;transition:background .15s,color .15s}
 .nav-item:hover{background:#f0f8ff;color:#0f75bc}
 .nav-item.active{background:#e8f4fd;color:#0f75bc;font-weight:600}
 .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.7}
@@ -34,13 +35,15 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .sidebar-footer{padding:12px 0;border-top:1px solid #f3f4f6}
 .sign-out{display:flex;align-items:center;gap:10px;padding:9px 20px;font-size:13px;color:#6b7280;cursor:pointer}
 .sign-out:hover{color:#dc2626}
+/* login */
 .login-page{min-height:100vh;background:#f1f3f5;display:flex;flex-direction:column}
+.login-topbar{padding:10px 20px;font-size:12px;color:#9ca3af}
 .login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
-.login-inner{width:100%;max-width:400px}
+.login-inner{width:100%;max-width:420px}
 .login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
 .logo-icon{width:52px;height:52px;background:#0f75bc;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
 .login-inner h1{font-size:22px;font-weight:700;text-align:center;color:#111827}
-.login-sub{font-size:13px;color:#6b7280;text-align:center;margin-top:4px}
+.subtitle{font-size:13px;color:#6b7280;text-align:center;margin-top:4px}
 .card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:24px;margin-bottom:16px}
 .card h3{font-size:16px;font-weight:600;margin-bottom:4px;color:#111827}
 .card-sub{font-size:12px;color:#6b7280;margin-bottom:20px}
@@ -48,25 +51,29 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .form-group label{display:block;font-size:13px;font-weight:500;margin-bottom:6px;color:#374151}
 .form-input{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#111827;outline:none;transition:border .15s}
 .form-input:focus{border-color:#0f75bc;background:#fff}
-.form-select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#111827;outline:none}
-.form-textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#111827;outline:none;resize:vertical;min-height:80px}
-.btn-primary{width:100%;padding:11px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit}
+.btn-primary{width:100%;padding:11px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
 .btn-primary:hover{background:#0d69a8}
 .btn-primary:disabled{background:#9ca3af;cursor:not-allowed}
 .login-footer{text-align:center;font-size:11px;color:#9ca3af;padding:16px}
 .err{background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+.suc{background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px;display:none}
+/* loading */
 .loading-screen{display:flex;align-items:center;justify-content:center;height:100vh;background:#f1f3f5;flex-direction:column;gap:12px}
 .spinner{width:32px;height:32px;border:3px solid #e5e7eb;border-top-color:#0f75bc;border-radius:50%;animation:spin .7s linear infinite}
+.spinner-sm{width:16px;height:16px;border:2px solid #e5e7eb;border-top-color:#0f75bc;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 @keyframes spin{to{transform:rotate(360deg)}}
+/* layout */
 .page-header{margin-bottom:28px}
 .page-header h1{font-size:22px;font-weight:700;color:#111827}
 .page-header p{font-size:13px;color:#6b7280;margin-top:3px}
 .header-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+/* stats */
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;margin-bottom:24px}
 .stat-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:18px 20px;display:flex;align-items:flex-start;gap:14px}
 .stat-bar{width:4px;height:40px;border-radius:2px;flex-shrink:0;margin-top:2px}
 .stat-num{font-size:28px;font-weight:700;line-height:1;color:#111827}
 .stat-label{font-size:12px;color:#6b7280;margin-top:4px}
+/* quick actions */
 .quick-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-bottom:24px}
 .quick-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:border-color .15s,box-shadow .15s}
 .quick-card:hover{border-color:#0f75bc;box-shadow:0 2px 8px rgba(15,117,188,.1)}
@@ -74,15 +81,18 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .quick-icon svg{width:18px;height:18px}
 .quick-info strong{font-size:14px;font-weight:600;display:block;color:#111827}
 .quick-info span{font-size:12px;color:#9ca3af}
+/* section card */
 .section-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px 24px;margin-bottom:16px}
 .section-title{font-size:15px;font-weight:600;margin-bottom:4px;color:#111827}
 .section-sub{font-size:12px;color:#6b7280;margin-bottom:16px}
+/* activity */
 .activity-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f6;cursor:pointer}
 .activity-item:last-child{border-bottom:none}
 .activity-item:hover{background:#fafafa;margin:0 -8px;padding:12px 8px;border-radius:6px}
 .activity-info{flex:1}
 .activity-info strong{font-size:13px;font-weight:500;color:#111827}
 .activity-info span{font-size:11px;color:#9ca3af;display:block;margin-top:1px}
+/* pills */
 .pill{font-size:11px;font-weight:500;padding:3px 10px;border-radius:6px;border:1px solid #e5e7eb;white-space:nowrap;display:inline-block}
 .pill-intake{border-color:#e5e7eb;color:#6b7280;background:#fff}
 .pill-quote{background:#ede9fe;color:#7c3aed;border-color:#ddd6fe}
@@ -92,64 +102,84 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .pill-complete{background:#dcfce7;color:#16a34a;border-color:#bbf7d0}
 .pill-cancelled{background:#f3f4f6;color:#6b7280;border-color:#e5e7eb}
 .pill-rush{background:#fee2e2;color:#dc2626;border-color:#fecaca;font-size:10px}
-.tab-bar{display:flex;background:#f3f4f6;border-radius:8px;padding:3px;margin-bottom:20px;width:fit-content}
+/* tabs */
+.tab-bar{display:flex;background:#f3f4f6;border-radius:8px;padding:3px;margin-bottom:20px;width:fit-content;flex-wrap:wrap;gap:2px}
 .tab{padding:7px 16px;border-radius:6px;font-size:13px;cursor:pointer;color:#6b7280;transition:all .15s;white-space:nowrap}
 .tab.active{background:#fff;color:#0f75bc;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.1)}
+/* cards */
 .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
-.order-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px}
+.order-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:20px;transition:box-shadow .15s}
 .order-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .card-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px}
-.card-header h3{font-size:15px;font-weight:600;color:#111827}
+.card-header h3{font-size:15px;font-weight:600;color:#111827;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .card-sub{font-size:12px;color:#6b7280;margin-bottom:14px}
 .card-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 20px;margin-bottom:14px}
 .meta-row label{font-size:11px;color:#9ca3af;display:block;margin-bottom:1px}
 .meta-row span{font-size:13px;font-weight:500;color:#111827}
 .notes-box{background:#f9fafb;border-radius:6px;padding:10px 12px;font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5}
 .notes-box label{display:block;font-size:11px;color:#9ca3af;margin-bottom:3px;font-weight:600}
-.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;transition:background .15s;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+/* buttons */
+.btn{padding:9px 16px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;border:none;transition:background .15s;display:inline-flex;align-items:center;gap:6px;justify-content:center}
 .btn-blue{background:#0f75bc;color:#fff}.btn-blue:hover{background:#0d69a8}
+.btn-dark{background:#111827;color:#fff}.btn-dark:hover{background:#1f2937}
 .btn-ghost{background:#fff;color:#111827;border:1px solid #e5e7eb}.btn-ghost:hover{background:#f9fafb}
-.btn-red{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}
-.btn-green{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}
+.btn-red{background:#fee2e2;color:#dc2626;border:1px solid #fecaca}.btn-red:hover{background:#fecaca}
+.btn-green{background:#dcfce7;color:#16a34a;border:1px solid #bbf7d0}.btn-green:hover{background:#bbf7d0}
 .btn-full{width:100%}
 .btn-sm{padding:6px 12px;font-size:12px}
-.btn-sm-blue{padding:8px 16px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit}
-.form-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:28px;max-width:680px}
+.btn-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn-sm-blue{padding:8px 16px;background:#0f75bc;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+/* form */
+.form-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:28px;max-width:700px}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .form-section{margin-bottom:24px}
 .form-section-title{font-size:13px;font-weight:600;margin-bottom:14px;padding-bottom:8px;border-bottom:1px solid #f3f4f6;color:#111827}
+.form-select{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#111827;outline:none}
+.form-select:focus{border-color:#0f75bc}
+.form-textarea{width:100%;padding:10px 12px;border:1px solid #e5e7eb;border-radius:8px;font-size:13px;font-family:inherit;background:#f9fafb;color:#111827;outline:none;resize:vertical;min-height:80px}
+/* modal */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:200;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:480px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
+.modal{background:#fff;border-radius:14px;padding:28px;width:100%;max-width:460px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .modal-header h2{font-size:17px;font-weight:700;color:#111827}
-.modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:#9ca3af;line-height:1}
+.modal-close{background:none;border:none;cursor:pointer;font-size:22px;color:#9ca3af;line-height:1;padding:0}
+/* empty state */
 .empty{text-align:center;padding:48px 20px;color:#9ca3af}
+.empty svg{width:40px;height:40px;margin:0 auto 12px;display:block;opacity:.4}
 .empty p{font-size:14px;margin-bottom:16px}
+/* order number */
 .order-num{font-family:monospace;font-size:11px;color:#9ca3af}
+/* team table */
+.team-table{width:100%;border-collapse:collapse}
+.team-table th{text-align:left;padding:8px 14px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #f3f4f6}
+.team-table td{padding:13px 14px;border-bottom:1px solid #f9fafb;font-size:13px;color:#374151}
+.team-table tr:last-child td{border-bottom:none}
+.team-table tr:hover td{background:#fafafa}
+/* flag cards */
 .flag-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:20px}
 .flag-card{background:#fff;border:1px solid #fecaca;border-radius:10px;padding:16px 18px;display:flex;align-items:flex-start;gap:12px}
 .flag-bar{width:4px;height:36px;border-radius:2px;flex-shrink:0}
 .flag-num{font-size:24px;font-weight:700;line-height:1;color:#111827}
 .flag-label{font-size:12px;color:#6b7280;margin-top:3px}
+/* metric */
 .metric-card{background:#f9fafb;border-radius:8px;padding:14px 16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center}
 .metric-val{font-size:22px;font-weight:700;color:#111827}
 .metric-label{font-size:12px;color:#6b7280}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.team-table{width:100%;border-collapse:collapse}
-.team-table th{text-align:left;padding:8px 14px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid #f3f4f6}
-.team-table td{padding:13px 14px;border-bottom:1px solid #f9fafb;font-size:13px;color:#374151}
-.team-table tr:hover td{background:#fafafa}
+/* info box */
 .info-box{background:#f0f8ff;border:1px solid #bae6fd;border-radius:8px;padding:12px 14px;font-size:12px;color:#0369a1;margin-top:14px;line-height:1.5}
-.flow-bar{display:flex;align-items:center;margin-bottom:20px;overflow-x:auto;padding-bottom:4px}
-.flow-node{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap;border:1.5px solid #e5e7eb;color:#9ca3af;background:#fff}
-.flow-node.done{background:#dcfce7;border-color:#bbf7d0;color:#16a34a}
-.flow-node.current{background:#0f75bc;border-color:#0f75bc;color:#fff}
-.flow-arrow{width:20px;height:2px;background:#e5e7eb;flex-shrink:0}
-.flow-arrow.done{background:#bbf7d0}
+/* page animation */
 .page{animation:fadeUp .18s ease}
 @keyframes fadeUp{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+/* status flow bar */
+.flow-bar{display:flex;align-items:center;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.flow-step{display:flex;align-items:center;gap:0;flex-shrink:0}
+.flow-node{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap;border:1.5px solid #e5e7eb;color:#9ca3af;background:#fff;cursor:default}
+.flow-node.done{background:#dcfce7;border-color:#bbf7d0;color:#16a34a}
+.flow-node.current{background:#0f75bc;border-color:#0f75bc;color:#fff}
+.flow-arrow{width:24px;height:2px;background:#e5e7eb;flex-shrink:0}
+.flow-arrow.done{background:#bbf7d0}
 @media(max-width:700px){.two-col,.form-row{grid-template-columns:1fr}.sidebar{width:200px}.main-content{padding:20px 16px}.card-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -161,6 +191,7 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 </div>
 
 <div id="loginPage" class="login-page" style="display:none">
+  <div class="login-topbar">Sturtee Merchandise Workflow System</div>
   <div class="login-wrap">
     <div class="login-inner">
       <div class="login-logo">
@@ -168,23 +199,17 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
           <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
         <h1>Sturtee Merch Portal</h1>
-        <p class="login-sub">Sign in to access the workflow system</p>
+        <p class="subtitle">Sign in to access the workflow system</p>
       </div>
       <div class="card">
         <h3>Sign In</h3>
         <p class="card-sub">Enter your credentials to continue</p>
         <div id="loginErr" class="err"></div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" class="form-input" id="loginEmail" placeholder="you@sturtee.com" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
-        <div class="form-group">
-          <label>Password</label>
-          <input type="password" class="form-input" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()">
-        </div>
+        <div class="form-group"><label>Email</label><input type="email" class="form-input" id="loginEmail" placeholder="you@sturtee.com" onkeydown="if(event.key==='Enter')doLogin()"></div>
+        <div class="form-group"><label>Password</label><input type="password" class="form-input" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"></div>
         <button class="btn-primary" id="loginBtn" onclick="doLogin()">Sign In</button>
       </div>
-      <div class="login-footer">Sturtee Merch Portal v1.0</div>
+      <div class="login-footer">Sturtee Merch Portal · v1.0</div>
     </div>
   </div>
 </div>
@@ -195,7 +220,7 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
     <div class="sidebar-user">
       <div class="avatar" id="sbAvatar">?</div>
       <div style="flex:1;min-width:0">
-        <div class="user-name" id="sbName">...</div>
+        <div class="user-name" id="sbName" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">...</div>
         <span class="role-badge" id="sbBadge">...</span>
       </div>
     </div>
@@ -213,167 +238,123 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
   </div>
 </div>
 
-<!-- ORDER DETAIL MODAL -->
-<div class="modal-bg" id="orderModal">
-  <div class="modal" style="max-width:560px">
-    <div class="modal-header">
-      <h2 id="omTitle">Order Details</h2>
-      <button class="modal-close" onclick="closeOrderModal()">&#215;</button>
-    </div>
-    <div id="omFlowBar"></div>
-    <div id="omBody"></div>
-    <div id="omActions" style="margin-top:16px"></div>
-  </div>
-</div>
-
-<!-- INVITE MODAL -->
-<div class="modal-bg" id="inviteModal">
-  <div class="modal">
-    <div class="modal-header">
-      <h2>Invite Team Member</h2>
-      <button class="modal-close" onclick="closeInvite()">&#215;</button>
-    </div>
-    <div id="invMsg"></div>
-    <div class="form-group"><label>Full Name</label><input class="form-input" id="inv_name" placeholder="e.g. Sarah Johnson"></div>
-    <div class="form-group"><label>Email Address</label><input class="form-input" id="inv_email" type="email" placeholder="sarah@sturtee.com"></div>
-    <div class="form-group"><label>Temporary Password</label>
-      <div style="position:relative">
-        <input class="form-input" id="inv_pass" type="text" style="padding-right:90px">
-        <button onclick="genPass()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#f3f4f6;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">Generate</button>
-      </div>
-    </div>
-    <div class="form-group"><label>Role</label>
-      <select class="form-select" id="inv_role">
-        <option value="sales_rep">Sales Rep</option>
-        <option value="designer">Designer</option>
-        <option value="fulfillment">Fulfillment</option>
-        <option value="admin">Admin</option>
-        <option value="super_admin">Super Admin</option>
-      </select>
-    </div>
-    <div class="btn-row">
-      <button class="btn btn-ghost btn-full" onclick="closeInvite()">Cancel</button>
-      <button class="btn btn-blue btn-full" id="invBtn" onclick="createMember()">Create Account</button>
-    </div>
-    <div class="info-box">After creating the account, share the email and temporary password with your team member. They can sign in right away.</div>
-  </div>
-</div>
-
 <script>
-var sb = supabase.createClient(
-  'https://xtgtihetywvytwqiyriw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0Z3RpaGV0eXd2eXR3cWl5cml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NDUyMDIsImV4cCI6MjA4NzAyMTIwMn0.YPRcqWz7uFR-WybGnK6HcZ_v-EYCeedDgLJB4_4iQUU'
-);
+// ═══════════════════ SUPABASE ═══════════════════
+let sb = null;
+if (typeof supabase !== 'undefined') {
+  try {
+    sb = supabase.createClient(
+      'https://xtgtihetywvytwqiyriw.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0Z3RpaGV0eXd2eXR3cWl5cml3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE0NDUyMDIsImV4cCI6MjA4NzAyMTIwMn0.YPRcqWz7uFR-WybGnK6HcZ_v-EYCeedDgLJB4_4iQUU'
+    );
+  } catch (e) { console.error(e); }
+}
 
-var CU = null, CP = null, PAGE = 'dashboard';
+// ═══════════════════ STATE ═══════════════════
+let CU = null; // current user (auth)
+let CP = null; // current profile (db)
+let PAGE = 'dashboard';
 
-var NAV_ROLES = {
+const NAV_ROLES = {
   super_admin: ['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin','team'],
   admin:       ['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin','team'],
   sales_rep:   ['dashboard','quote-request','approvals','storefront'],
   designer:    ['dashboard','design-queue','approvals'],
-  fulfillment: ['dashboard','fulfillment']
+  fulfillment: ['dashboard','fulfillment'],
 };
 
-var NAV_LABELS = {
-  'dashboard':'Dashboard','quote-request':'New Quote','design-queue':'Design Queue',
-  'approvals':'Approvals','fulfillment':'Fulfillment','storefront':'Storefront',
-  'admin':'Admin','team':'Team'
+const NAV_DEFS = {
+  dashboard:      { label:'Dashboard',     icon:'<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' },
+  'quote-request':{ label:'New Quote',     icon:'<path d="M12 4v16m8-8H4"/>' },
+  'design-queue': { label:'Design Queue',  icon:'<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>' },
+  approvals:      { label:'Approvals',     icon:'<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
+  fulfillment:    { label:'Fulfillment',   icon:'<path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>' },
+  storefront:     { label:'Storefront',    icon:'<path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>' },
+  admin:          { label:'Admin',         icon:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>' },
+  team:           { label:'Team',          icon:'<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>' },
 };
 
-var STATUS_LABELS = {
-  intake:'Intake', quote:'Quoted', design:'Design',
-  production:'Production', fulfillment:'Fulfillment',
-  complete:'Complete', cancelled:'Cancelled'
-};
-var STATUS_FLOW = ['intake','quote','design','production','fulfillment','complete'];
+const STATUS_FLOW = ['intake','quote','design','production','fulfillment','complete'];
+const STATUS_LABELS = {intake:'Intake',quote:'Quoted',design:'Design',production:'Production',fulfillment:'Fulfillment',complete:'Complete',cancelled:'Cancelled'};
 
-// ── BOOT ──
+// ═══════════════════ BOOT ═══════════════════
 async function boot() {
-  var res = await sb.auth.getSession();
-  if (res.data.session) {
-    await loadProfile(res.data.session.user);
-  } else {
-    showLogin();
-  }
+  if (!sb) { hide('loadingScreen'); show('loginPage'); document.body.insertAdjacentHTML('beforeend', '<div class="err" style="margin:20px">Failed to load Supabase. Check your connection.</div>'); return; }
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await loadProfile(session.user);
+    else showLogin();
+  } catch (e) { hide('loadingScreen'); show('loginPage'); console.error(e); }
 }
 
 async function loadProfile(user) {
   CU = user;
-  var res = await sb.from('users').select('*').eq('id', user.id).single();
-  if (!res.data) {
-    var ins = await sb.from('users').insert({
-      id: user.id,
-      email: user.email,
-      full_name: (user.user_metadata && user.user_metadata.full_name) ? user.user_metadata.full_name : user.email.split('@')[0],
+  const { data: p } = await sb.from('users').select('*').eq('id', user.id).single();
+  if (!p) {
+    const { data: np, error: insErr } = await sb.from('users').insert({
+      id: user.id, email: user.email,
+      full_name: user.user_metadata?.full_name || user.email.split('@')[0],
       role: 'admin'
     }).select().single();
-    CP = ins.data;
-  } else {
-    CP = res.data;
-  }
+    if (insErr) { console.error(insErr); CP = { id: user.id, email: user.email, full_name: user.email.split('@')[0], role: 'admin' }; }
+    else CP = np;
+  } else { CP = p; }
   showApp();
 }
 
 function showLogin() {
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('loginPage').style.display = 'flex';
-  document.getElementById('appShell').style.display = 'none';
+  hide('loadingScreen'); show('loginPage'); hide('appShell');
 }
-
 function showApp() {
-  document.getElementById('loadingScreen').style.display = 'none';
-  document.getElementById('loginPage').style.display = 'none';
-  document.getElementById('appShell').style.display = 'flex';
-  var name = (CP && CP.full_name) ? CP.full_name : CU.email;
-  var role = (CP && CP.role) ? CP.role : 'admin';
-  document.getElementById('sbAvatar').textContent = name.charAt(0).toUpperCase();
-  document.getElementById('sbName').textContent = name;
-  var badge = document.getElementById('sbBadge');
-  badge.textContent = role.replace('_', ' ');
-  badge.className = 'role-badge badge-' + role;
+  hide('loadingScreen'); hide('loginPage'); show('appShell');
+  const name = CP?.full_name || (CU && CU.email) || 'User';
+  const role = CP?.role || 'admin';
+  const av = $('sbAvatar'), nm = $('sbName'), b = $('sbBadge');
+  if (av) av.textContent = name.charAt(0).toUpperCase();
+  if (nm) nm.textContent = name;
+  if (b) { b.textContent = role.replace('_',' '); b.className = 'role-badge badge-' + role; }
   buildNav(role);
   go('dashboard');
 }
 
 async function doLogin() {
-  var email = document.getElementById('loginEmail').value.trim();
-  var pass = document.getElementById('loginPass').value;
-  var errEl = document.getElementById('loginErr');
-  if (!email || !pass) { errEl.textContent = 'Please enter your email and password'; errEl.style.display = 'block'; return; }
-  var btn = document.getElementById('loginBtn');
-  btn.disabled = true; btn.textContent = 'Signing in...';
-  var res = await sb.auth.signInWithPassword({ email: email, password: pass });
-  btn.disabled = false; btn.textContent = 'Sign In';
-  if (res.error) { errEl.textContent = res.error.message; errEl.style.display = 'block'; return; }
-  errEl.style.display = 'none';
-  await loadProfile(res.data.user);
+  if (!sb) return;
+  const email = v('loginEmail'), pass = v('loginPass');
+  const errEl = $('loginErr');
+  if (!email || !pass) { showErr(errEl, 'Please enter your email and password'); return; }
+  const btn = $('loginBtn'); if (btn) { btn.disabled = true; btn.textContent = 'Signing in...'; }
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  if (btn) { btn.disabled = false; btn.textContent = 'Sign In'; }
+  if (error) { showErr(errEl, error.message); return; }
+  if (errEl) errEl.style.display = 'none';
+  if (data && data.user) await loadProfile(data.user);
 }
 
 async function doSignOut() {
-  await sb.auth.signOut();
+  if (sb) await sb.auth.signOut();
   CU = null; CP = null;
   showLogin();
 }
 
-// ── NAV ──
+// ═══════════════════ NAV ═══════════════════
 function buildNav(role) {
-  var pages = NAV_ROLES[role] || ['dashboard'];
-  var html = '';
-  for (var i = 0; i < pages.length; i++) {
-    var p = pages[i];
-    html += '<div class="nav-item" id="nav-' + p + '" onclick="go(\'' + p + '\')">' + NAV_LABELS[p] + '</div>';
-  }
-  document.getElementById('sbNav').innerHTML = html;
+  const pages = NAV_ROLES[role] || ['dashboard'];
+  const navEl = $('sbNav'); if (!navEl) return;
+  navEl.innerHTML = pages.map(p => {
+    const d = NAV_DEFS[p];
+    return `<div class="nav-item" id="nav-${p}" onclick="go('${p}')">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${d.icon}</svg>
+      ${d.label}
+    </div>`;
+  }).join('');
 }
 
 function go(page) {
   PAGE = page;
-  var items = document.querySelectorAll('.nav-item');
-  for (var i = 0; i < items.length; i++) items[i].classList.remove('active');
-  var el = document.getElementById('nav-' + page);
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('nav-' + page);
   if (el) el.classList.add('active');
-  var renders = {
+  const renders = {
     dashboard: pgDashboard,
     'quote-request': pgQuote,
     'design-queue': pgDesignQueue,
@@ -381,29 +362,35 @@ function go(page) {
     fulfillment: pgFulfillment,
     storefront: pgStorefront,
     admin: pgAdmin,
-    team: pgTeam
+    team: pgTeam,
   };
   (renders[page] || pgDashboard)();
 }
 
-function setTab(container, el, fn) {
-  var tabs = container.querySelectorAll('.tab');
-  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+function setTab(c, el, fn) {
+  if (typeof c === 'string') c = document.getElementById(c);
+  if (!c) return;
+  c.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   el.classList.add('active');
   if (fn) fn();
 }
 
-// ── HELPERS ──
-function gv(id) { return (document.getElementById(id) ? document.getElementById(id).value.trim() : ''); }
-function el(id) { return document.getElementById(id); }
-function html(id, content) { document.getElementById(id).innerHTML = content; }
+// ═══════════════════ HELPERS ═══════════════════
+const v = id => document.getElementById(id)?.value?.trim() || '';
+const $ = id => document.getElementById(id);
+function show(id) { const el = typeof id === 'string' ? $(id) : id; if (el) el.style.display = 'flex'; }
+function hide(id) { const el = typeof id === 'string' ? $(id) : id; if (el) el.style.display = 'none'; }
+function showErr(el, msg) { if (el) { el.className = 'err'; el.textContent = msg; el.style.display = 'block'; } }
+function mc(id, html) { const el = $(id); if (el) el.innerHTML = html; }
+function escapeHtml(str) { if (str == null) return ''; const s = String(str); const div = document.createElement('div'); div.textContent = s; return div.innerHTML; }
+function escJs(s) { if (s == null) return ''; return String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 function timeAgo(d) {
-  var diff = Date.now() - new Date(d).getTime();
-  var m = Math.floor(diff / 60000);
+  const diff = Date.now() - new Date(d).getTime();
+  const m = Math.floor(diff / 60000);
   if (m < 1) return 'just now';
   if (m < 60) return m + 'm ago';
-  var h = Math.floor(m / 60);
+  const h = Math.floor(m / 60);
   if (h < 24) return h + 'h ago';
   return Math.floor(h / 24) + 'd ago';
 }
@@ -414,610 +401,676 @@ function fmtDate(d) {
 }
 
 function pill(status) {
-  var label = STATUS_LABELS[status] || status;
-  return '<span class="pill pill-' + status + '">' + label + '</span>';
+  return `<span class="pill pill-${status}">${STATUS_LABELS[status] || status}</span>`;
 }
 
-function buildFlowBar(currentStatus) {
-  var ci = STATUS_FLOW.indexOf(currentStatus);
-  var html = '<div class="flow-bar">';
-  for (var i = 0; i < STATUS_FLOW.length; i++) {
-    var s = STATUS_FLOW[i];
-    var cls = i < ci ? 'done' : (i === ci ? 'current' : '');
-    html += '<div class="flow-node ' + cls + '">' + STATUS_LABELS[s] + '</div>';
-    if (i < STATUS_FLOW.length - 1) {
-      html += '<div class="flow-arrow ' + (i < ci ? 'done' : '') + '"></div>';
-    }
-  }
-  html += '</div>';
-  return html;
+function flowBar(currentStatus) {
+  const steps = STATUS_FLOW;
+  const ci = steps.indexOf(currentStatus);
+  return `<div class="flow-bar">${steps.map((s, i) => {
+    const cls = i < ci ? 'done' : i === ci ? 'current' : '';
+    const arrow = i < steps.length - 1 ? `<div class="flow-arrow ${i < ci ? 'done' : ''}"></div>` : '';
+    return `<div class="flow-step"><div class="flow-node ${cls}">${STATUS_LABELS[s]}</div>${arrow}</div>`;
+  }).join('')}</div>`;
 }
 
-function emptyHTML(msg, btnLabel, btnFn) {
-  var btn = btnLabel ? '<button class="btn btn-blue" onclick="' + btnFn + '">' + btnLabel + '</button>' : '';
-  return '<div class="empty"><p>' + msg + '</p>' + btn + '</div>';
+function emptyState(msg, btnLabel, btnFn) {
+  return `<div class="empty">
+    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    <p>${msg}</p>
+    ${btnLabel ? `<button class="btn btn-blue" onclick="${btnFn}">${btnLabel}</button>` : ''}
+  </div>`;
 }
 
 async function updateStatus(id, status) {
-  var res = await sb.from('orders').update({ status: status, updated_at: new Date().toISOString() }).eq('id', id);
-  if (res.error) { alert('Error: ' + res.error.message); return false; }
+  const { error } = await sb.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
+  if (error) { alert('Error: ' + error.message); return false; }
   return true;
 }
 
-// ── ORDER MODAL ──
+// ═══════════════════ DASHBOARD ═══════════════════
+async function pgDashboard() {
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>Dashboard</h1><p>Live overview of all orders in the pipeline</p></div>
+    <div class="stat-grid" id="dStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="quick-grid">
+      <div class="quick-card" onclick="go('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Start a new order</span></div></div>
+      <div class="quick-card" onclick="go('design-queue')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>View active designs</span></div></div>
+      <div class="quick-card" onclick="go('approvals')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div class="quick-info"><strong>Approvals</strong><span>Pending review</span></div></div>
+      <div class="quick-card" onclick="go('fulfillment')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div><div class="quick-info"><strong>Fulfillment</strong><span>Production & shipping</span></div></div>
+    </div>
+    <div class="section-card">
+      <div class="section-title">Recent Orders</div>
+      <div class="section-sub">Click any order to view details and take action</div>
+      <div id="dRecent"><div style="text-align:center;padding:20px"><div class="spinner-sm"></div></div></div>
+    </div>
+  </div>`);
+
+  // Load real stats
+  const { data: orders } = await sb.from('orders').select('status');
+  const dStatsEl = $('dStats');
+  if (orders && dStatsEl) {
+    const c = {};
+    STATUS_FLOW.forEach(s => c[s] = 0);
+    orders.forEach(o => { if (c[o.status] !== undefined) c[o.status]++; });
+    dStatsEl.innerHTML = `
+      <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${(c.intake || 0) + (c.quote || 0)}</div><div class="stat-label">Pending Quotes</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">${c.design || 0}</div><div class="stat-label">In Design</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">${c.production || 0}</div><div class="stat-label">In Production</div></div></div>
+      <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${c.fulfillment || 0}</div><div class="stat-label">Ready to Ship</div></div></div>`;
+  } else if (dStatsEl) dStatsEl.innerHTML = '<div class="stat-card"><div class="stat-num">0</div><div class="stat-label">Loading…</div></div>';
+
+  // Load recent orders (filter by rep if sales role)
+  let q = sb.from('orders').select('*').order('created_at', { ascending: false }).limit(8);
+  if (CP?.role === 'sales_rep') q = q.eq('rep_id', CU.id);
+  const { data: recent } = await q;
+
+  if (!recent?.length) {
+    mc('dRecent', emptyState('No orders yet.', 'Create First Quote', "go('quote-request')"));
+    return;
+  }
+  const el = $('dRecent'); if (el) el.innerHTML = recent.map(o => `
+    <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
+      <div style="flex:1">
+        <strong style="font-size:13px;font-weight:500;color:#111827">${escapeHtml(o.client_name)}${o.event_name ? ' – ' + escapeHtml(o.event_name) : ''}</strong>
+        <span style="font-size:11px;color:#9ca3af;display:block;margin-top:1px">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'} · ${timeAgo(o.created_at)}</span>
+      </div>
+      ${pill(o.status)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}
+    </div>`).join('');
+}
+
+// ═══════════════════ ORDER DETAIL MODAL ═══════════════════
 async function openOrder(id) {
-  var res = await sb.from('orders').select('*').eq('id', id).single();
-  var o = res.data;
+  const { data: o } = await sb.from('orders').select('*').eq('id', id).single();
   if (!o) return;
-  var role = CP ? CP.role : '';
-  var canAdvance = (role === 'admin' || role === 'super_admin' || role === 'fulfillment');
-  var nextMap = { intake:'quote', quote:'design', design:'production', production:'fulfillment', fulfillment:'complete' };
-  var next = nextMap[o.status];
+  const role = CP?.role;
+  const canAdvance = ['admin','super_admin','fulfillment'].includes(role);
+  const nextStatus = { intake:'quote', quote:'design', design:'production', production:'fulfillment', fulfillment:'complete' };
+  const next = nextStatus[o.status];
 
-  el('omTitle').textContent = o.client_name + (o.event_name ? ' – ' + o.event_name : '');
-  el('omFlowBar').innerHTML = buildFlowBar(o.status);
-
-  var body = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px">';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Order #</div><div style="font-family:monospace;font-size:13px">' + (o.order_number || '—') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Status</div>' + pill(o.status) + '</div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Garment</div><div style="font-size:13px;font-weight:500">' + (o.garment_type || '—') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Print Method</div><div style="font-size:13px;font-weight:500">' + (o.print_method || '—') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Quantity</div><div style="font-size:13px;font-weight:500">' + (o.quantity || '—') + ' units</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Budget</div><div style="font-size:13px;font-weight:500">' + (o.budget ? '$' + o.budget.toLocaleString() : '—') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Due Date</div><div style="font-size:13px;font-weight:500">' + fmtDate(o.timeline_date) + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Fulfillment</div><div style="font-size:13px;font-weight:500">' + (o.fulfillment_type || 'bulk') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Organization</div><div style="font-size:13px;font-weight:500">' + (o.organization || '—') + '</div></div>';
-  body += '<div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Rush</div><div style="font-size:13px;font-weight:500">' + (o.is_rush ? 'Yes ⚡' : 'No') + '</div></div>';
-  body += '</div>';
-  if (o.design_notes) {
-    body += '<div class="notes-box"><label>Design Brief</label>' + o.design_notes + '</div>';
-  }
-  body += '<div style="font-size:11px;color:#9ca3af">Created ' + fmtDate(o.created_at) + '</div>';
-  el('omBody').innerHTML = body;
-
-  var actions = '';
-  if (canAdvance && next) {
-    actions = '<div class="btn-row">' +
-      '<button class="btn btn-ghost btn-full" onclick="cancelOrder(\'' + o.id + '\')">Cancel Order</button>' +
-      '<button class="btn btn-blue btn-full" onclick="advanceOrder(\'' + o.id + '\',\'' + next + '\')">Move to ' + STATUS_LABELS[next] + ' &rarr;</button>' +
-      '</div>';
-  } else if (o.status === 'complete') {
-    actions = '<div style="text-align:center;padding:12px;color:#16a34a;font-weight:600">Order Complete</div>';
-  }
-  el('omActions').innerHTML = actions;
-  el('orderModal').classList.add('open');
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg open';
+  modal.id = 'orderModal';
+  const _flow = flowBar(o.status);
+  modal.innerHTML = `<div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <h2>${escapeHtml(o.client_name)}${o.event_name ? ' – ' + escapeHtml(o.event_name) : ''}</h2>
+      <button class="modal-close" onclick="closeOrderModal()">×</button>
+    </div>
+    ${_flow}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px">
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Order #</div><div style="font-family:monospace;font-size:13px">${escapeHtml(o.order_number || '—')}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Status</div>${pill(o.status)}</div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Garment</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.garment_type || '—')}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Print Method</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.print_method || '—')}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Quantity</div><div style="font-size:13px;font-weight:500">${o.quantity ?? '—'} units</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Budget</div><div style="font-size:13px;font-weight:500">${o.budget != null ? '$' + Number(o.budget).toLocaleString() : '—'}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Due Date</div><div style="font-size:13px;font-weight:500">${escapeHtml(fmtDate(o.timeline_date))}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Fulfillment</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.fulfillment_type || 'bulk')}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Organization</div><div style="font-size:13px;font-weight:500">${escapeHtml(o.organization || '—')}</div></div>
+      <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Rush</div><div style="font-size:13px;font-weight:500">${o.is_rush ? '⚡ Yes' : 'No'}</div></div>
+    </div>
+    ${o.design_notes ? `<div class="notes-box"><label>Design Brief</label>${escapeHtml(o.design_notes)}</div>` : ''}
+    <div style="font-size:11px;color:#9ca3af;margin-bottom:14px">Created ${fmtDate(o.created_at)}</div>
+    ${canAdvance && next ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <button class="btn btn-ghost btn-full" onclick="cancelOrder('${o.id}')">Cancel Order</button>
+      <button class="btn btn-blue btn-full" onclick="advanceOrder('${o.id}','${next}')">Move to ${STATUS_LABELS[next]} →</button>
+    </div>` : ''}
+    ${o.status === 'complete' ? '<div style="text-align:center;padding:12px;color:#16a34a;font-weight:600">✓ Order Complete</div>' : ''}
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
-function closeOrderModal() {
-  el('orderModal').classList.remove('open');
-}
-
+function closeOrderModal() { document.getElementById('orderModal')?.remove(); }
 async function advanceOrder(id, status) {
-  var ok = await updateStatus(id, status);
-  if (ok) { closeOrderModal(); go(PAGE); }
+  const ok = await updateStatus(id, status);
+  if (ok) { $('orderModal')?.remove(); go(PAGE); }
 }
 
 async function cancelOrder(id) {
   if (!confirm('Cancel this order?')) return;
-  var ok = await updateStatus(id, 'cancelled');
-  if (ok) { closeOrderModal(); go(PAGE); }
+  const ok = await updateStatus(id, 'cancelled');
+  if (ok) { $('orderModal')?.remove(); go(PAGE); }
 }
 
-// ── DASHBOARD ──
-async function pgDashboard() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>Dashboard</h1><p>Live overview of all orders in the pipeline</p></div>' +
-    '<div class="stat-grid" id="dStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>' +
-    '<div class="quick-grid">' +
-      '<div class="quick-card" onclick="go(\'quote-request\')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Start a new order</span></div></div>' +
-      '<div class="quick-card" onclick="go(\'design-queue\')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>View active designs</span></div></div>' +
-      '<div class="quick-card" onclick="go(\'approvals\')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div class="quick-info"><strong>Approvals</strong><span>Pending review</span></div></div>' +
-      '<div class="quick-card" onclick="go(\'fulfillment\')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div><div class="quick-info"><strong>Fulfillment</strong><span>Production &amp; shipping</span></div></div>' +
-    '</div>' +
-    '<div class="section-card"><div class="section-title">Recent Orders</div><div class="section-sub">Click any order to view details and take action</div><div id="dRecent"><div style="padding:20px;text-align:center"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div></div></div></div>' +
-    '</div>';
-
-  var statsRes = await sb.from('orders').select('status');
-  if (statsRes.data) {
-    var c = { intake:0, quote:0, design:0, production:0, fulfillment:0, complete:0 };
-    for (var i = 0; i < statsRes.data.length; i++) {
-      var s = statsRes.data[i].status;
-      if (c[s] !== undefined) c[s]++;
-    }
-    el('dStats').innerHTML =
-      '<div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">' + (c.intake + c.quote) + '</div><div class="stat-label">Pending Quotes</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">' + c.design + '</div><div class="stat-label">In Design</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">' + c.production + '</div><div class="stat-label">In Production</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">' + c.fulfillment + '</div><div class="stat-label">Ready to Ship</div></div></div>';
-  }
-
-  var q = sb.from('orders').select('*').order('created_at', { ascending: false }).limit(8);
-  if (CP && CP.role === 'sales_rep') q = q.eq('rep_id', CU.id);
-  var recent = await q;
-  if (!recent.data || !recent.data.length) {
-    el('dRecent').innerHTML = emptyHTML('No orders yet.', 'Create First Quote', "go('quote-request')");
-    return;
-  }
-  var rHtml = '';
-  for (var i = 0; i < recent.data.length; i++) {
-    var o = recent.data[i];
-    rHtml += '<div class="activity-item" onclick="openOrder(\'' + o.id + '\')">' +
-      '<div class="activity-info"><strong>' + o.client_name + (o.event_name ? ' – ' + o.event_name : '') + '</strong>' +
-      '<span>' + (o.order_number || '—') + ' · ' + (o.garment_type || '—') + ' · Qty ' + (o.quantity || '—') + ' · ' + timeAgo(o.created_at) + '</span></div>' +
-      pill(o.status) + (o.is_rush ? ' <span class="pill pill-rush">RUSH</span>' : '') +
-      '</div>';
-  }
-  el('dRecent').innerHTML = rHtml;
-}
-
-// ── QUOTE REQUEST ──
+// ═══════════════════ QUOTE REQUEST ═══════════════════
 function pgQuote() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>New Quote Request</h1><p>Submit a new merchandise order</p></div>' +
-    '<div id="quoteMsg"></div>' +
-    '<div class="form-card">' +
-      '<div class="form-section"><div class="form-section-title">Client Information</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group"><label>Client / Chapter Name *</label><input class="form-input" id="q_client" placeholder="e.g. Alpha Phi"></div>' +
-          '<div class="form-group"><label>Organization / School</label><input class="form-input" id="q_org" placeholder="e.g. Ohio State"></div>' +
-        '</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group"><label>Event / Campaign Name</label><input class="form-input" id="q_event" placeholder="e.g. Spring Formal 2026"></div>' +
-          '<div class="form-group"><label>Client Contact Email</label><input class="form-input" id="q_email" type="email" placeholder="contact@chapter.com"></div>' +
-        '</div>' +
-      '</div>' +
-      '<div class="form-section"><div class="form-section-title">Order Details</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group"><label>Garment Type</label><select class="form-select" id="q_garment"><option>T-Shirt</option><option>Hoodie</option><option>Crewneck</option><option>Tank Top</option><option>Long Sleeve</option><option>Polo</option><option>Hat</option><option>Jacket</option><option>Other</option></select></div>' +
-          '<div class="form-group"><label>Print Method</label><select class="form-select" id="q_print"><option>Screen Print</option><option>Embroidery</option><option>DTG</option><option>Sublimation</option><option>Heat Transfer</option></select></div>' +
-        '</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group"><label>Quantity *</label><input class="form-input" id="q_qty" type="number" min="1" placeholder="e.g. 50"></div>' +
-          '<div class="form-group"><label>Client Budget ($)</label><input class="form-input" id="q_budget" type="number" placeholder="e.g. 1200"></div>' +
-        '</div>' +
-        '<div class="form-row">' +
-          '<div class="form-group"><label>Needed By Date</label><input class="form-input" id="q_date" type="date"></div>' +
-          '<div class="form-group"><label>Fulfillment Type</label><select class="form-select" id="q_fulfill"><option value="bulk">Bulk Delivery</option><option value="individual">Individual Ship</option></select></div>' +
-        '</div>' +
-        '<div class="form-group"><label>Rush Order?</label><select class="form-select" id="q_rush"><option value="false">No – Standard timeline</option><option value="true">Yes – Rush (+25% fee)</option></select></div>' +
-      '</div>' +
-      '<div class="form-section"><div class="form-section-title">Design Brief</div>' +
-        '<div class="form-group"><label>Design Description</label><textarea class="form-textarea" id="q_notes" placeholder="Describe the design: colors, placement, text, logos..."></textarea></div>' +
-      '</div>' +
-      '<button class="btn-primary" onclick="submitQuote()">Submit Quote Request</button>' +
-    '</div></div>';
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>New Quote Request</h1><p>Submit a new merchandise order</p></div>
+    <div id="quoteMsg" class="err" style="display:none"></div>
+    <div class="form-card">
+      <div class="form-section">
+        <div class="form-section-title">Client Information</div>
+        <div class="form-row">
+          <div class="form-group"><label>Client / Chapter Name *</label><input class="form-input" id="q_client" placeholder="e.g. Alpha Phi"></div>
+          <div class="form-group"><label>Organization / School</label><input class="form-input" id="q_org" placeholder="e.g. Ohio State"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Event / Campaign Name</label><input class="form-input" id="q_event" placeholder="e.g. Spring Formal 2026"></div>
+          <div class="form-group"><label>Client Contact Email</label><input class="form-input" id="q_email" type="email" placeholder="contact@chapter.com"></div>
+        </div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Order Details</div>
+        <div class="form-row">
+          <div class="form-group"><label>Garment Type</label>
+            <select class="form-select" id="q_garment">
+              <option>T-Shirt</option><option>Hoodie</option><option>Crewneck</option><option>Tank Top</option><option>Long Sleeve</option><option>Polo</option><option>Hat</option><option>Jacket</option><option>Other</option>
+            </select></div>
+          <div class="form-group"><label>Print Method</label>
+            <select class="form-select" id="q_print">
+              <option>Screen Print</option><option>Embroidery</option><option>DTG</option><option>Sublimation</option><option>Heat Transfer</option>
+            </select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Quantity *</label><input class="form-input" id="q_qty" type="number" min="1" placeholder="e.g. 50"></div>
+          <div class="form-group"><label>Client Budget ($)</label><input class="form-input" id="q_budget" type="number" placeholder="e.g. 1200"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Needed By Date</label><input class="form-input" id="q_date" type="date"></div>
+          <div class="form-group"><label>Fulfillment Type</label>
+            <select class="form-select" id="q_fulfill"><option value="bulk">Bulk Delivery</option><option value="individual">Individual Ship</option></select></div>
+        </div>
+        <div class="form-group"><label>Rush Order?</label>
+          <select class="form-select" id="q_rush"><option value="false">No – Standard timeline</option><option value="true">Yes – Rush (+25% fee)</option></select></div>
+      </div>
+      <div class="form-section">
+        <div class="form-section-title">Design Brief</div>
+        <div class="form-group"><label>Design Description</label>
+          <textarea class="form-textarea" id="q_notes" placeholder="Describe the design: colors, placement, text, logos, inspiration, any special requirements..."></textarea></div>
+      </div>
+      <button class="btn btn-blue btn-full" style="font-size:14px;padding:12px" onclick="submitQuote()">Submit Quote Request</button>
+    </div>
+  </div>`);
 }
 
 async function submitQuote() {
-  var client = gv('q_client');
-  var qty = parseInt(gv('q_qty'));
-  var msgEl = el('quoteMsg');
-  if (!client) { msgEl.textContent = 'Client name is required'; msgEl.style.cssText = 'display:block;background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px'; return; }
-  if (!qty || qty < 1) { msgEl.textContent = 'Please enter a valid quantity'; msgEl.style.cssText = 'display:block;background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px'; return; }
-  msgEl.style.display = 'none';
-  var res = await sb.from('orders').insert({
+  const client = v('q_client'), qty = parseInt(v('q_qty'));
+  const msg = $('quoteMsg');
+  if (!client) { showErr(msg, '⚠ Client name is required'); return; }
+  if (!qty || qty < 1) { showErr(msg, '⚠ Please enter a valid quantity'); return; }
+  msg.style.display = 'none';
+
+  const { error } = await sb.from('orders').insert({
     client_name: client,
-    organization: gv('q_org'),
-    event_name: gv('q_event'),
-    garment_type: el('q_garment').value,
-    print_method: el('q_print').value,
+    organization: v('q_org'),
+    event_name: v('q_event'),
+    garment_type: v('q_garment') || 'T-Shirt',
+    print_method: v('q_print') || 'Screen Print',
     quantity: qty,
-    budget: parseFloat(gv('q_budget')) || null,
-    timeline_date: gv('q_date') || null,
-    fulfillment_type: el('q_fulfill').value,
-    is_rush: el('q_rush').value === 'true',
-    design_notes: gv('q_notes'),
+    budget: parseFloat(v('q_budget')) || null,
+    timeline_date: v('q_date') || null,
+    fulfillment_type: ($('q_fulfill') && $('q_fulfill').value) || 'bulk',
+    is_rush: ($('q_rush') && $('q_rush').value) === 'true',
+    design_notes: v('q_notes'),
     rep_id: CU.id,
-    status: 'intake'
+    status: 'intake',
   });
-  if (res.error) { msgEl.textContent = 'Error: ' + res.error.message; msgEl.style.cssText = 'display:block;background:#fee2e2;color:#dc2626;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px'; return; }
-  msgEl.textContent = 'Quote submitted successfully! Redirecting...';
-  msgEl.style.cssText = 'display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
-  setTimeout(function() { go('dashboard'); }, 1400);
+
+  if (error) { showErr(msg, '⚠ Error: ' + error.message); return; }
+  msg.className = 'suc';
+  msg.style.cssText = 'display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
+  msg.textContent = '✅ Quote submitted! Redirecting to dashboard...';
+  setTimeout(() => go('dashboard'), 1400);
 }
 
-// ── DESIGN QUEUE ──
+// ═══════════════════ DESIGN QUEUE ═══════════════════
 async function pgDesignQueue() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>Design Queue</h1><p>Manage mockup creation and design workflow</p></div>' +
-    '<div class="stat-grid" id="dqStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>' +
-    '<div class="tab-bar">' +
-      '<div class="tab active" onclick="setTab(this.parentElement,this,function(){dqFilter(\'all\')})">All</div>' +
-      '<div class="tab" onclick="setTab(this.parentElement,this,function(){dqFilter(\'intake\')})">Pending</div>' +
-      '<div class="tab" onclick="setTab(this.parentElement,this,function(){dqFilter(\'design\')})">In Progress</div>' +
-      '<div class="tab" onclick="setTab(this.parentElement,this,function(){dqFilter(\'production\')})">Production</div>' +
-    '</div>' +
-    '<div class="card-grid" id="dqCards"><div style="padding:20px;text-align:center"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div></div></div>' +
-    '</div>';
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>Design Queue</h1><p>Manage mockup creation and design workflow</p></div>
+    <div class="stat-grid" id="dqStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="setTab(this.parentElement,this,()=>dqFilter('all'))">All</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>dqFilter('pending'))">Pending</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>dqFilter('design'))">In Progress</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>dqFilter('production'))">Production</div>
+    </div>
+    <div class="card-grid" id="dqCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
+  </div>`);
 
-  var res = await sb.from('orders').select('*').in('status', ['intake','quote','design','production']).order('created_at', { ascending: true });
-  window._dqAll = res.data || [];
+  const { data: orders } = await sb.from('orders').select('*')
+    .in('status', ['intake','quote','design','production'])
+    .order('is_rush', { ascending: false })
+    .order('created_at', { ascending: true });
+
+  window._dqAll = orders || [];
   dqRender(window._dqAll);
 
-  var o = window._dqAll;
-  var pending = 0, indesign = 0, prod = 0;
-  for (var i = 0; i < o.length; i++) {
-    if (o[i].status === 'intake' || o[i].status === 'quote') pending++;
-    if (o[i].status === 'design') indesign++;
-    if (o[i].status === 'production') prod++;
-  }
-  el('dqStats').innerHTML =
-    '<div class="stat-card"><div><div class="stat-num">' + pending + '</div><div class="stat-label">Pending</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + indesign + '</div><div class="stat-label">In Design</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + prod + '</div><div class="stat-label">Production</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + o.length + '</div><div class="stat-label">Total Active</div></div></div>';
+  const o = window._dqAll;
+  const dqStatsEl = $('dqStats'); if (dqStatsEl) dqStatsEl.innerHTML = `
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x => x.status === 'intake' || x.status === 'quote').length}</div><div class="stat-label">Pending</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x => x.status === 'design').length}</div><div class="stat-label">In Design</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.filter(x => x.status === 'production').length}</div><div class="stat-label">Production</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${o.length}</div><div class="stat-label">Total Active</div></div></div>`;
 }
 
 function dqFilter(s) {
-  var o = window._dqAll || [];
-  dqRender(s === 'all' ? o : o.filter(function(x) { return x.status === s; }));
+  const o = window._dqAll || [];
+  if (s === 'all') dqRender(o);
+  else if (s === 'pending') dqRender(o.filter(x => x.status === 'intake' || x.status === 'quote'));
+  else dqRender(o.filter(x => x.status === s));
 }
 
 function dqRender(orders) {
-  if (!orders.length) { el('dqCards').innerHTML = emptyHTML('No orders in this stage.', null, null); return; }
-  var h = '';
-  for (var i = 0; i < orders.length; i++) {
-    var o = orders[i];
-    var nextLabel = (o.status === 'intake' || o.status === 'quote') ? 'Start Design' : (o.status === 'design' ? 'To Production' : 'To Fulfillment');
-    h += '<div class="order-card">' +
-      '<div class="card-header"><h3>' + o.client_name + (o.is_rush ? ' <span class="pill pill-rush">RUSH</span>' : '') + '</h3>' + pill(o.status) + '</div>' +
-      '<div class="card-sub">' + (o.event_name || o.organization || '—') + '</div>' +
-      '<div class="card-meta">' +
-        '<div class="meta-row"><label>Garment</label><span>' + (o.garment_type || '—') + '</span></div>' +
-        '<div class="meta-row"><label>Quantity</label><span>' + (o.quantity || '—') + ' units</span></div>' +
-        '<div class="meta-row"><label>Method</label><span>' + (o.print_method || '—') + '</span></div>' +
-        '<div class="meta-row"><label>Due</label><span>' + fmtDate(o.timeline_date) + '</span></div>' +
-      '</div>' +
-      (o.design_notes ? '<div class="notes-box"><label>Brief</label>' + o.design_notes + '</div>' : '') +
-      '<div class="btn-row">' +
-        '<button class="btn btn-ghost btn-full btn-sm" onclick="openOrder(\'' + o.id + '\')">View Details</button>' +
-        '<button class="btn btn-blue btn-full btn-sm" onclick="dqAdvance(\'' + o.id + '\',\'' + o.status + '\')">' + nextLabel + '</button>' +
-      '</div></div>';
-  }
-  el('dqCards').innerHTML = h;
+  if (!orders.length) { mc('dqCards', emptyState('No orders in this stage.', null, null)); return; }
+  mc('dqCards', orders.map(o => `
+    <div class="order-card">
+      <div class="card-header">
+        <h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>
+        ${pill(o.status)}
+      </div>
+      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Garment</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
+        <div class="meta-row"><label>Method</label><span>${escapeHtml(o.print_method || '—')}</span></div>
+        <div class="meta-row"><label>Due</label><span>${escapeHtml(fmtDate(o.timeline_date))}</span></div>
+      </div>
+      ${o.design_notes ? `<div class="notes-box"><label>Brief</label>${escapeHtml(o.design_notes)}</div>` : ''}
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="openOrder('${o.id}')">View Details</button>
+        <button class="btn btn-blue btn-full btn-sm" onclick="dqAdvance('${o.id}','${o.status}')">
+          ${o.status === 'intake' || o.status === 'quote' ? '▶ Start Design' : o.status === 'design' ? '→ To Production' : '→ To Fulfillment'}
+        </button>
+      </div>
+    </div>`).join(''));
 }
 
 async function dqAdvance(id, status) {
-  var nextMap = { intake:'design', quote:'design', design:'production', production:'fulfillment' };
-  var ok = await updateStatus(id, nextMap[status] || 'production');
+  const next = { intake: 'design', quote: 'design', design: 'production', production: 'fulfillment' };
+  const ok = await updateStatus(id, next[status] || 'production');
   if (ok) pgDesignQueue();
 }
 
-// ── APPROVALS ──
+// ═══════════════════ APPROVALS ═══════════════════
 async function pgApprovals() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>Approvals</h1><p>Review completed designs and approve for production</p></div>' +
-    '<div class="stat-grid" id="apStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>' +
-    '<div class="card-grid" id="apCards"><div style="padding:20px;text-align:center"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div></div></div>' +
-    '</div>';
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>Approvals</h1><p>Review completed designs and approve for production</p></div>
+    <div class="stat-grid" id="apStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="card-grid" id="apCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
+  </div>`);
 
-  var res = await sb.from('orders').select('*').in('status', ['design','production']).order('created_at', { ascending: false });
-  var list = res.data || [];
+  const { data: orders } = await sb.from('orders').select('*')
+    .in('status', ['design','production'])
+    .order('created_at', { ascending: false });
 
-  var pending = 0, approved = 0, rush = 0;
-  for (var i = 0; i < list.length; i++) {
-    if (list[i].status === 'design') pending++;
-    if (list[i].status === 'production') approved++;
-    if (list[i].is_rush) rush++;
-  }
-  el('apStats').innerHTML =
-    '<div class="stat-card"><div><div class="stat-num">' + pending + '</div><div class="stat-label">Awaiting Approval</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + approved + '</div><div class="stat-label">Approved</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + rush + '</div><div class="stat-label">Rush</div></div></div>' +
-    '<div class="stat-card"><div><div class="stat-num">' + list.length + '</div><div class="stat-label">Total</div></div></div>';
+  const list = orders || [];
+  const apStatsEl = $('apStats'); if (apStatsEl) apStatsEl.innerHTML = `
+    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.status === 'design').length}</div><div class="stat-label">Awaiting Approval</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.status === 'production').length}</div><div class="stat-label">Approved</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.is_rush).length}</div><div class="stat-label">Rush</div></div></div>
+    <div class="stat-card"><div><div class="stat-num">${list.length}</div><div class="stat-label">Total</div></div></div>`;
 
-  if (!list.length) { el('apCards').innerHTML = emptyHTML('No items pending approval.', null, null); return; }
-  var h = '';
-  for (var i = 0; i < list.length; i++) {
-    var o = list[i];
-    h += '<div class="order-card">' +
-      '<div class="card-header"><h3>' + o.client_name + (o.is_rush ? ' <span class="pill pill-rush">RUSH</span>' : '') + '</h3>' + pill(o.status) + '</div>' +
-      '<div class="card-sub">' + (o.event_name || o.organization || '—') + '</div>' +
-      '<div class="card-meta">' +
-        '<div class="meta-row"><label>Product</label><span>' + (o.garment_type || '—') + '</span></div>' +
-        '<div class="meta-row"><label>Quantity</label><span>' + (o.quantity || '—') + ' units</span></div>' +
-        '<div class="meta-row"><label>Method</label><span>' + (o.print_method || '—') + '</span></div>' +
-        '<div class="meta-row"><label>Order #</label><span class="order-num">' + (o.order_number || '—') + '</span></div>' +
-      '</div>' +
-      (o.design_notes ? '<div class="notes-box"><label>Design Notes</label>' + o.design_notes + '</div>' : '') +
-      '<div class="btn-row">' +
-        '<button class="btn btn-ghost btn-full btn-sm" onclick="apRevision(\'' + o.id + '\')">Request Revision</button>' +
-        '<button class="btn btn-green btn-full btn-sm" onclick="apApprove(\'' + o.id + '\')">Approve</button>' +
-      '</div></div>';
-  }
-  el('apCards').innerHTML = h;
+  if (!list.length) { mc('apCards', emptyState('No items pending approval.', null, null)); return; }
+  mc('apCards', list.map(o => `
+    <div class="order-card">
+      <div class="card-header"><h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
+      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Product</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
+        <div class="meta-row"><label>Method</label><span>${escapeHtml(o.print_method || '—')}</span></div>
+        <div class="meta-row"><label>Order #</label><span class="order-num">${escapeHtml(o.order_number || '—')}</span></div>
+      </div>
+      ${o.design_notes ? `<div class="notes-box"><label>Design Notes</label>${escapeHtml(o.design_notes)}</div>` : ''}
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="apRevision('${o.id}')">↩ Request Revision</button>
+        <button class="btn btn-green btn-full btn-sm" onclick="apApprove('${o.id}')">✓ Approve</button>
+      </div>
+    </div>`).join(''));
 }
 
-async function apApprove(id) { var ok = await updateStatus(id, 'production'); if (ok) pgApprovals(); }
-async function apRevision(id) { var ok = await updateStatus(id, 'design'); if (ok) pgApprovals(); }
+async function apApprove(id) {
+  const ok = await updateStatus(id, 'production');
+  if (ok) pgApprovals();
+}
+async function apRevision(id) {
+  const ok = await updateStatus(id, 'design');
+  if (ok) pgApprovals();
+}
 
-// ── FULFILLMENT ──
+// ═══════════════════ FULFILLMENT ═══════════════════
 async function pgFulfillment() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>Fulfillment</h1><p>Track production and shipping status</p></div>' +
-    '<div class="stat-grid" id="ffStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>' +
-    '<div class="tab-bar">' +
-      '<div class="tab active" onclick="setTab(this.parentElement,this,function(){ffFilter(\'active\')})">Active</div>' +
-      '<div class="tab" onclick="setTab(this.parentElement,this,function(){ffFilter(\'complete\')})">Completed</div>' +
-      '<div class="tab" onclick="setTab(this.parentElement,this,function(){ffFilter(\'all\')})">All</div>' +
-    '</div>' +
-    '<div class="card-grid" id="ffCards"><div style="padding:20px;text-align:center"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div></div></div>' +
-    '</div>';
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>Fulfillment</h1><p>Track production and shipping status</p></div>
+    <div class="stat-grid" id="ffStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="setTab(this.parentElement,this,()=>ffFilter('active'))">Active</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>ffFilter('complete'))">Completed</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>ffFilter('all'))">All</div>
+    </div>
+    <div class="card-grid" id="ffCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
+  </div>`);
 
-  var res = await sb.from('orders').select('*').in('status', ['production','fulfillment','complete']).order('created_at', { ascending: false });
-  window._ffAll = res.data || [];
-  ffFilter('active');
+  const { data: orders } = await sb.from('orders').select('*')
+    .in('status', ['production','fulfillment','complete'])
+    .order('created_at', { ascending: false });
 
-  var o = window._ffAll;
-  var prod = 0, ship = 0, done = 0;
-  for (var i = 0; i < o.length; i++) {
-    if (o[i].status === 'production') prod++;
-    if (o[i].status === 'fulfillment') ship++;
-    if (o[i].status === 'complete') done++;
-  }
-  el('ffStats').innerHTML =
-    '<div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">' + prod + '</div><div class="stat-label">In Production</div></div></div>' +
-    '<div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">' + ship + '</div><div class="stat-label">Ready to Ship</div></div></div>' +
-    '<div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">' + done + '</div><div class="stat-label">Delivered</div></div></div>' +
-    '<div class="stat-card"><div class="stat-bar" style="background:#6b7280"></div><div><div class="stat-num">' + o.length + '</div><div class="stat-label">Total</div></div></div>';
+  window._ffAll = orders || [];
+  ffRender(window._ffAll.filter(o => o.status !== 'complete'));
+
+  const o = window._ffAll;
+  const ffStatsEl = $('ffStats'); if (ffStatsEl) ffStatsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">${o.filter(x => x.status === 'production').length}</div><div class="stat-label">In Production</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${o.filter(x => x.status === 'fulfillment').length}</div><div class="stat-label">Ready to Ship</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${o.filter(x => x.status === 'complete').length}</div><div class="stat-label">Delivered</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#6b7280"></div><div><div class="stat-num">${o.length}</div><div class="stat-label">Total</div></div></div>`;
 }
 
 function ffFilter(f) {
-  var o = window._ffAll || [];
-  var filtered = f === 'active' ? o.filter(function(x) { return x.status !== 'complete'; }) :
-                 f === 'complete' ? o.filter(function(x) { return x.status === 'complete'; }) : o;
-  if (!filtered.length) { el('ffCards').innerHTML = emptyHTML('No orders in this stage.', null, null); return; }
-  var h = '';
-  for (var i = 0; i < filtered.length; i++) {
-    var o = filtered[i];
-    h += '<div class="order-card">' +
-      '<div class="card-header"><h3>' + o.client_name + (o.is_rush ? ' <span class="pill pill-rush">RUSH</span>' : '') + '</h3>' + pill(o.status) + '</div>' +
-      '<div class="card-sub">' + (o.event_name || o.organization || '—') + '</div>' +
-      '<div class="card-meta">' +
-        '<div class="meta-row"><label>Product</label><span>' + (o.garment_type || '—') + '</span></div>' +
-        '<div class="meta-row"><label>Quantity</label><span>' + (o.quantity || '—') + ' units</span></div>' +
-        '<div class="meta-row"><label>Fulfillment</label><span>' + (o.fulfillment_type || 'bulk') + '</span></div>' +
-        '<div class="meta-row"><label>Order #</label><span class="order-num">' + (o.order_number || '—') + '</span></div>' +
-      '</div>' +
-      (o.is_rush ? '<div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:12px">Rush – expedited shipping required</div>' : '') +
-      (o.status !== 'complete' ?
-        '<div class="btn-row">' +
-          '<button class="btn btn-ghost btn-full btn-sm" onclick="openOrder(\'' + o.id + '\')">View Details</button>' +
-          '<button class="btn btn-blue btn-full btn-sm" onclick="ffAdvance(\'' + o.id + '\',\'' + o.status + '\')">' + (o.status === 'production' ? 'Mark Ready to Ship' : 'Mark Delivered') + '</button>' +
-        '</div>'
-        : '<div style="text-align:center;color:#16a34a;font-size:13px;font-weight:600;padding:4px">Delivered ' + fmtDate(o.updated_at) + '</div>'
-      ) +
-      '</div>';
-  }
-  el('ffCards').innerHTML = h;
+  const o = window._ffAll || [];
+  const filtered = f === 'active' ? o.filter(x => x.status !== 'complete')
+    : f === 'complete' ? o.filter(x => x.status === 'complete') : o;
+  ffRender(filtered);
+}
+
+function ffRender(orders) {
+  if (!orders.length) { mc('ffCards', emptyState('No orders in this stage.', null, null)); return; }
+  mc('ffCards', orders.map(o => `
+    <div class="order-card">
+      <div class="card-header"><h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
+      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Product</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
+        <div class="meta-row"><label>Fulfillment</label><span>${escapeHtml(o.fulfillment_type || 'bulk')}</span></div>
+        <div class="meta-row"><label>Order #</label><span class="order-num">${escapeHtml(o.order_number || '—')}</span></div>
+      </div>
+      ${o.is_rush ? `<div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:12px">⚡ Rush – expedited shipping required</div>` : ''}
+      ${o.status !== 'complete' ? `<div class="btn-row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="openOrder('${o.id}')">View Details</button>
+        <button class="btn btn-blue btn-full btn-sm" onclick="ffAdvance('${o.id}','${o.status}')">
+          ${o.status === 'production' ? '→ Mark Ready to Ship' : '✓ Mark Delivered'}
+        </button>
+      </div>` : `<div style="text-align:center;color:#16a34a;font-size:13px;font-weight:600;padding:4px">✓ Delivered ${fmtDate(o.updated_at)}</div>`}
+    </div>`).join(''));
 }
 
 async function ffAdvance(id, status) {
-  var nextMap = { production: 'fulfillment', fulfillment: 'complete' };
-  var ok = await updateStatus(id, nextMap[status]);
+  const next = { production: 'fulfillment', fulfillment: 'complete' };
+  const ok = await updateStatus(id, next[status]);
   if (ok) pgFulfillment();
 }
 
-// ── STOREFRONT ──
+// ═══════════════════ STOREFRONT ═══════════════════
 function pgStorefront() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="header-row">' +
-      '<div class="page-header" style="margin-bottom:0"><h1>Storefront</h1><p>Manage products and pricing</p></div>' +
-      '<button class="btn-sm-blue" onclick="openAddProduct()">+ Add Product</button>' +
-    '</div><br>' +
-    '<div class="stat-grid" id="sfStats"></div>' +
-    '<div id="sfProducts"></div>' +
-    '</div>';
-  if (!window._products) window._products = [];
-  sfRefresh();
+  mc('mainContent', `<div class="page">
+    <div class="header-row">
+      <div class="page-header" style="margin-bottom:0"><h1>Storefront</h1><p>Manage products and chapter assignments</p></div>
+      <button class="btn-sm-blue" onclick="openAddProduct()">+ Add Product</button>
+    </div><br>
+    <div class="stat-grid" id="sfStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="tab-bar">
+      <div class="tab active" onclick="setTab(this.parentElement,this,()=>sfRender('all'))">All</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>sfRender('active'))">Active</div>
+      <div class="tab" onclick="setTab(this.parentElement,this,()=>sfRender('inactive'))">Inactive</div>
+    </div>
+    <div id="sfProducts"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
+  </div>`);
+  loadStorefront();
 }
 
-function sfRefresh() {
-  var p = window._products;
-  var active = p.filter(function(x) { return x.active; }).length;
-  el('sfStats').innerHTML =
-    '<div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">' + p.length + '</div><div class="stat-label">Products</div></div></div>' +
-    '<div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">' + active + '</div><div class="stat-label">Active</div></div></div>' +
-    '<div class="stat-card"><div class="stat-bar" style="background:#9ca3af"></div><div><div class="stat-num">' + (p.length - active) + '</div><div class="stat-label">Inactive</div></div></div>';
-  if (!p.length) {
-  el('sfProducts').innerHTML = emptyHTML(
-    'No products yet. Add your first product.',
-    '+ Add First Product',
-    'openAddProduct()'
-  );
-  return;
+async function loadStorefront() {
+  // For now products are managed as a simple in-memory list
+  // In next iteration this will be a real products table
+  const products = window._products || [];
+  const active = products.filter(p => p.active).length;
+  const sfStatsEl = $('sfStats'); if (sfStatsEl) sfStatsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${products.length}</div><div class="stat-label">Products</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${active}</div><div class="stat-label">Active</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#9ca3af"></div><div><div class="stat-num">${products.length - active}</div><div class="stat-label">Inactive</div></div></div>`;
+  sfRender('all');
 }
 
-  var h = '<div class="card-grid">';
-  for (var i = 0; i < p.length; i++) {
-    var prod = p[i];
-    h += '<div class="order-card">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
-        '<span style="font-size:15px;font-weight:600;color:#111827">' + prod.name + '</span>' +
-        '<div style="text-align:right"><span style="font-size:15px;font-weight:700;color:#0f75bc">$' + prod.price + '</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div>' +
-      '</div>' +
-      '<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">' + prod.category + ' · ' + (prod.active ? '<span style="color:#16a34a">Active</span>' : '<span style="color:#9ca3af">Inactive</span>') + '</div>' +
-      '<div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5">' + (prod.desc || '') + '</div>' +
-      '<div class="btn-row">' +
-        '<button class="btn btn-ghost btn-full btn-sm" onclick="toggleProduct(' + i + ')">' + (prod.active ? 'Deactivate' : 'Activate') + '</button>' +
-        '<button class="btn btn-red btn-full btn-sm" onclick="removeProduct(' + i + ')">Remove</button>' +
-      '</div></div>';
+function sfRender(filter) {
+  const products = window._products || [];
+  const list = filter === 'active' ? products.filter(p => p.active)
+    : filter === 'inactive' ? products.filter(p => !p.active) : products;
+  if (!list.length) {
+    $('sfProducts').innerHTML = emptyState(
+      filter === 'all' ? 'No products yet. Add your first product.' : `No ${filter} products.`,
+      filter === 'all' ? '+ Add First Product' : null,
+      "openAddProduct()"
+    );
+    return;
   }
-  h += '</div>';
-  el('sfProducts').innerHTML = h;
+  const sfEl = $('sfProducts'); if (sfEl) sfEl.innerHTML = `<div class="card-grid">${list.map((p, i) => `
+    <div class="order-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+        <span style="font-size:15px;font-weight:600;color:#111827">${escapeHtml(p.name)}</span>
+        <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:#0f75bc">$${escapeHtml(p.price)}</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div>
+      </div>
+      <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${escapeHtml(p.category || '')} · ${p.active ? '<span style="color:#16a34a">Active</span>' : '<span style="color:#9ca3af">Inactive</span>'}</div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5">${escapeHtml(p.desc || '')}</div>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="toggleProduct(${i})">${p.active ? 'Deactivate' : 'Activate'}</button>
+        <button class="btn btn-red btn-full btn-sm" onclick="removeProduct(${i})">Remove</button>
+      </div>
+    </div>`).join('')}</div>`;
 }
 
 function openAddProduct() {
-  el('mainContent').insertAdjacentHTML('afterend', '<div class="modal-bg open" id="addProdModal">' +
-    '<div class="modal"><div class="modal-header"><h2>Add Product</h2><button class="modal-close" onclick="document.getElementById(\'addProdModal\').remove()">&#215;</button></div>' +
-    '<div id="apMsg"></div>' +
-    '<div class="form-group"><label>Product Name *</label><input class="form-input" id="ap_name" placeholder="e.g. Classic T-Shirt"></div>' +
-    '<div class="form-row"><div class="form-group"><label>Base Price ($) *</label><input class="form-input" id="ap_price" type="number" placeholder="18.50"></div>' +
-    '<div class="form-group"><label>Category</label><select class="form-select" id="ap_cat"><option>Apparel</option><option>Headwear</option><option>Bags</option><option>Accessories</option></select></div></div>' +
-    '<div class="form-group"><label>Description</label><textarea class="form-textarea" id="ap_desc" placeholder="Describe the product..."></textarea></div>' +
-    '<div class="btn-row"><button class="btn btn-ghost btn-full" onclick="document.getElementById(\'addProdModal\').remove()">Cancel</button>' +
-    '<button class="btn btn-blue btn-full" onclick="saveProduct()">Add Product</button></div>' +
-    '</div></div>');
+  const modal = document.createElement('div');
+  modal.className = 'modal-bg open';
+  modal.id = 'addProductModal';
+  modal.innerHTML = `<div class="modal">
+    <div class="modal-header"><h2>Add Product</h2><button class="modal-close" onclick="$('addProductModal').remove()">×</button></div>
+    <div id="apMsg"></div>
+    <div class="form-group"><label>Product Name *</label><input class="form-input" id="ap_name" placeholder="e.g. Classic T-Shirt"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Base Price ($) *</label><input class="form-input" id="ap_price" type="number" placeholder="e.g. 18.50"></div>
+      <div class="form-group"><label>Category</label><select class="form-select" id="ap_cat"><option>Apparel</option><option>Headwear</option><option>Bags</option><option>Accessories</option></select></div>
+    </div>
+    <div class="form-group"><label>Description</label><textarea class="form-textarea" id="ap_desc" placeholder="Describe the product..."></textarea></div>
+    <div class="btn-row" style="margin-top:4px">
+      <button class="btn btn-ghost btn-full" onclick="$('addProductModal').remove()">Cancel</button>
+      <button class="btn btn-blue btn-full" onclick="saveProduct()">Add Product</button>
+    </div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
 }
 
 function saveProduct() {
-  var name = gv('ap_name'), price = gv('ap_price');
-  if (!name || !price) { el('apMsg').innerHTML = '<div style="color:#dc2626;font-size:13px;margin-bottom:12px">Name and price are required</div>'; return; }
-  window._products.push({ name: name, price: parseFloat(price).toFixed(2), category: el('ap_cat').value, desc: gv('ap_desc'), active: true });
-  var m = document.getElementById('addProdModal');
-  if (m) m.remove();
-  sfRefresh();
+  const name = v('ap_name'), price = v('ap_price');
+  const msg = $('apMsg');
+  if (!name || !price) { showErr(msg, 'Name and price are required'); return; }
+  const catEl = $('ap_cat');
+  if (!window._products) window._products = [];
+  window._products.push({ name, price: parseFloat(price).toFixed(2), category: catEl ? catEl.value : 'Apparel', desc: v('ap_desc'), active: true });
+  const modal = $('addProductModal'); if (modal) modal.remove();
+  loadStorefront();
 }
 
-function toggleProduct(i) { window._products[i].active = !window._products[i].active; sfRefresh(); }
-function removeProduct(i) { if (!confirm('Remove this product?')) return; window._products.splice(i, 1); sfRefresh(); }
+function toggleProduct(i) {
+  window._products[i].active = !window._products[i].active;
+  sfRender('all');
+}
+function removeProduct(i) {
+  if (!confirm('Remove this product?')) return;
+  window._products.splice(i, 1);
+  loadStorefront();
+}
 
-// ── ADMIN ──
+// ═══════════════════ ADMIN ═══════════════════
 async function pgAdmin() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="page-header"><h1>Admin Dashboard</h1><p>System oversight and business metrics</p></div>' +
-    '<div class="flag-grid" id="adFlags"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>' +
-    '<div class="two-col">' +
-      '<div class="section-card"><div class="section-title">All Orders</div><div class="section-sub">Click to view order details</div><div id="adOrders"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>' +
-      '<div class="section-card"><div class="section-title">Business Metrics</div><div class="section-sub">Key performance indicators</div><div id="adMetrics"></div></div>' +
-    '</div></div>';
+  mc('mainContent', `<div class="page">
+    <div class="page-header"><h1>Admin Dashboard</h1><p>System oversight and business metrics</p></div>
+    <div class="flag-grid" id="adFlags"><div style="color:#9ca3af;font-size:13px">Loading...</div></div>
+    <div class="two-col">
+      <div class="section-card"><div class="section-title">All Orders</div><div class="section-sub">Complete pipeline view</div><div id="adOrders"><div class="spinner-sm"></div></div></div>
+      <div class="section-card"><div class="section-title">Business Metrics</div><div class="section-sub">Key performance indicators</div><div id="adMetrics"><div class="spinner-sm"></div></div></div>
+    </div>
+  </div>`);
 
-  var res = await sb.from('orders').select('*').order('created_at', { ascending: false });
-  var list = res.data || [];
-  var rush = 0;
-  for (var i = 0; i < list.length; i++) {
-    if (list[i].is_rush && list[i].status !== 'complete' && list[i].status !== 'cancelled') rush++;
-  }
+  const { data: orders } = await sb.from('orders').select('*').order('created_at', { ascending: false });
+  const list = orders || [];
+  const rush = list.filter(o => o.is_rush && o.status !== 'complete' && o.status !== 'cancelled').length;
 
-  el('adFlags').innerHTML =
-    '<div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">' + rush + '</div><div class="flag-label">Active Rush Orders</div></div></div>' +
-    '<div class="flag-card"><div class="flag-bar" style="background:#d97706"></div><div><div class="flag-num">' + list.filter(function(o) { return o.status === 'intake'; }).length + '</div><div class="flag-label">New Intakes</div></div></div>' +
-    '<div class="flag-card"><div class="flag-bar" style="background:#7c3aed"></div><div><div class="flag-num">' + list.filter(function(o) { return o.status === 'design'; }).length + '</div><div class="flag-label">In Design</div></div></div>' +
-    '<div class="flag-card"><div class="flag-bar" style="background:#16a34a"></div><div><div class="flag-num">' + list.filter(function(o) { return o.status === 'complete'; }).length + '</div><div class="flag-label">Completed</div></div></div>';
+  const adFlagsEl = $('adFlags'); if (adFlagsEl) adFlagsEl.innerHTML = `
+    <div class="flag-card"><div class="flag-bar" style="background:#dc2626"></div><div><div class="flag-num">${rush}</div><div class="flag-label">Active Rush Orders</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#d97706"></div><div><div class="flag-num">${list.filter(o => o.status === 'intake').length}</div><div class="flag-label">New Intakes</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#7c3aed"></div><div><div class="flag-num">${list.filter(o => o.status === 'design').length}</div><div class="flag-label">In Design</div></div></div>
+    <div class="flag-card"><div class="flag-bar" style="background:#16a34a"></div><div><div class="flag-num">${list.filter(o => o.status === 'complete').length}</div><div class="flag-label">Completed</div></div></div>`;
 
-  if (!list.length) { el('adOrders').innerHTML = emptyHTML('No orders yet.', null, null); }
-  else {
-    var h = '';
-    for (var i = 0; i < Math.min(list.length, 12); i++) {
-      var o = list[i];
-      h += '<div class="activity-item" onclick="openOrder(\'' + o.id + '\')">' +
-        '<div class="activity-info"><strong>' + o.client_name + '</strong><span>' + (o.order_number || '—') + ' · ' + (o.garment_type || '—') + ' · Qty ' + (o.quantity || '—') + '</span></div>' +
-        pill(o.status) + '</div>';
-    }
-    el('adOrders').innerHTML = h;
-  }
+  const adOrdersEl = $('adOrders'); if (adOrdersEl) adOrdersEl.innerHTML = list.length ? list.slice(0, 12).map(o => `
+    <div class="activity-item" onclick="openOrder('${String(o.id).replace(/'/g, "\\'")}')">
+      <div style="flex:1"><strong style="font-size:13px">${escapeHtml(o.client_name)}</strong><span style="font-size:11px;color:#9ca3af;display:block">${escapeHtml(o.order_number || '—')} · ${escapeHtml(o.garment_type || '—')} · Qty ${o.quantity ?? '—'}</span></div>
+      ${pill(o.status)}
+    </div>`).join('') : emptyState('No orders yet.', null, null);
 
-  var revenue = 0, totalQty = 0;
-  for (var i = 0; i < list.length; i++) { revenue += (list[i].budget || 0); totalQty += (list[i].quantity || 0); }
-  var avgQty = list.length ? Math.round(totalQty / list.length) : 0;
-  el('adMetrics').innerHTML =
-    '<div class="metric-card"><div><div class="metric-label">Total Orders</div><div class="metric-val">' + list.length + '</div></div><span style="font-size:20px">📋</span></div>' +
-    '<div class="metric-card"><div><div class="metric-label">Pipeline Value</div><div class="metric-val">$' + revenue.toLocaleString() + '</div><div style="font-size:11px;color:#6b7280">Client budgets</div></div><span style="font-size:20px">💵</span></div>' +
-    '<div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">' + avgQty + ' units</div></div><span style="font-size:20px">📦</span></div>' +
-    '<div class="metric-card"><div><div class="metric-label">Rush Orders Active</div><div class="metric-val">' + rush + '</div></div><span style="font-size:20px">⚡</span></div>';
+  const revenue = list.reduce((s, o) => s + (o.budget || 0), 0);
+  const avgQty = list.length ? Math.round(list.reduce((s, o) => s + (o.quantity || 0), 0) / list.length) : 0;
+  const adMetricsEl = $('adMetrics'); if (adMetricsEl) adMetricsEl.innerHTML = `
+    <div class="metric-card"><div><div class="metric-label">Total Orders</div><div class="metric-val">${list.length}</div></div><span style="font-size:20px">📋</span></div>
+    <div class="metric-card"><div><div class="metric-label">Pipeline Value</div><div class="metric-val">$${revenue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280">Client budgets</div></div><span style="font-size:20px">💵</span></div>
+    <div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">${avgQty} units</div></div><span style="font-size:20px">📦</span></div>
+    <div class="metric-card"><div><div class="metric-label">Rush Orders Active</div><div class="metric-val">${rush}</div></div><span style="font-size:20px">⚡</span></div>`;
 }
 
-// ── TEAM ──
+// ═══════════════════ TEAM ═══════════════════
 async function pgTeam() {
-  el('mainContent').innerHTML = '<div class="page">' +
-    '<div class="header-row">' +
-      '<div class="page-header" style="margin-bottom:0"><h1>Team Management</h1><p>Invite and manage your team members</p></div>' +
-      '<button class="btn-sm-blue" onclick="openInvite()">+ Invite Member</button>' +
-    '</div><br>' +
-    '<div class="stat-grid" id="tmStats"></div>' +
-    '<div class="section-card"><div class="section-title">Team Members</div><div class="section-sub">Change roles using the dropdown. You cannot change your own role.</div><div id="tmList"><div style="padding:20px;text-align:center"><div class="spinner" style="width:20px;height:20px;border-width:2px;margin:0 auto"></div></div></div></div>' +
-    '</div>';
+  mc('mainContent', `<div class="page">
+    <div class="header-row">
+      <div class="page-header" style="margin-bottom:0"><h1>Team Management</h1><p>Invite and manage your team members</p></div>
+      <button class="btn-sm-blue" onclick="openInvite()">+ Invite Member</button>
+    </div><br>
+    <div class="stat-grid" id="tmStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
+    <div class="section-card">
+      <div class="section-title">Team Members</div>
+      <div class="section-sub">Change roles using the dropdown. You cannot change your own role.</div>
+      <div id="tmList"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
+    </div>
+
+    <!-- invite modal -->
+    <div class="modal-bg" id="inviteModal">
+      <div class="modal">
+        <div class="modal-header"><h2>Invite Team Member</h2><button class="modal-close" onclick="closeInvite()">×</button></div>
+        <div id="invMsg" class="err" style="display:none"></div>
+        <div class="form-group"><label>Full Name *</label><input class="form-input" id="inv_name" placeholder="e.g. Sarah Johnson"></div>
+        <div class="form-group"><label>Email Address *</label><input class="form-input" id="inv_email" type="email" placeholder="sarah@sturtee.com"></div>
+        <div class="form-group"><label>Temporary Password *</label>
+          <div style="position:relative">
+            <input class="form-input" id="inv_pass" type="text" style="padding-right:88px">
+            <button onclick="genPass()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#f3f4f6;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;font-family:inherit">Generate</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Role</label>
+          <select class="form-select" id="inv_role">
+            <option value="sales_rep">Sales Rep</option>
+            <option value="designer">Designer</option>
+            <option value="fulfillment">Fulfillment</option>
+            <option value="admin">Admin</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-ghost btn-full" onclick="closeInvite()">Cancel</button>
+          <button class="btn btn-blue btn-full" id="invBtn" onclick="createMember()">Create Account</button>
+        </div>
+        <div class="info-box">💡 After creating the account, share the email and temporary password with the team member. They can sign in right away.</div>
+      </div>
+    </div>
+  </div>`);
   await loadTeam();
   genPass();
 }
 
 async function loadTeam() {
-  var res = await sb.from('users').select('*').order('created_at', { ascending: true });
-  var m = res.data || [];
-  var admins = 0, sales = 0, designers = 0;
-  for (var i = 0; i < m.length; i++) {
-    if (m[i].role === 'admin' || m[i].role === 'super_admin') admins++;
-    if (m[i].role === 'sales_rep') sales++;
-    if (m[i].role === 'designer') designers++;
-  }
-  if (el('tmStats')) {
-    el('tmStats').innerHTML =
-      '<div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">' + m.length + '</div><div class="stat-label">Total Members</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#dc2626"></div><div><div class="stat-num">' + admins + '</div><div class="stat-label">Admins</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#2563eb"></div><div><div class="stat-num">' + sales + '</div><div class="stat-label">Sales Reps</div></div></div>' +
-      '<div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">' + designers + '</div><div class="stat-label">Designers</div></div></div>';
-  }
-  if (!m.length) { el('tmList').innerHTML = emptyHTML('No team members yet.', null, null); return; }
-  var h = '<table class="team-table"><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th></tr></thead><tbody>';
-  for (var i = 0; i < m.length; i++) {
-    var u = m[i];
-    var isMe = (u.id === CU.id);
-    var roleSelect = '<select onchange="updateRole(\'' + u.id + '\',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;font-family:inherit;cursor:pointer"' + (isMe ? ' disabled' : '') + '>' +
-      '<option value="sales_rep"' + (u.role === 'sales_rep' ? ' selected' : '') + '>Sales Rep</option>' +
-      '<option value="designer"' + (u.role === 'designer' ? ' selected' : '') + '>Designer</option>' +
-      '<option value="fulfillment"' + (u.role === 'fulfillment' ? ' selected' : '') + '>Fulfillment</option>' +
-      '<option value="admin"' + (u.role === 'admin' ? ' selected' : '') + '>Admin</option>' +
-      '<option value="super_admin"' + (u.role === 'super_admin' ? ' selected' : '') + '>Super Admin</option>' +
-      '</select>';
-    var removeBtn = isMe ? '—' : '<button class="btn btn-red btn-sm" data-id="' + u.id + '" data-name="' + (u.full_name || u.email) + '" onclick="removeMember(this)">Remove</button>';
-    h += '<tr>' +
-      '<td><div style="display:flex;align-items:center;gap:10px"><div style="width:32px;height:32px;border-radius:50%;background:#0f75bc;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">' + (u.full_name || u.email).charAt(0).toUpperCase() + '</div>' +
-      '<div><div style="font-weight:500">' + (u.full_name || '—') + '</div>' + (isMe ? '<div style="font-size:11px;color:#9ca3af">You</div>' : '') + '</div></div></td>' +
-      '<td style="color:#6b7280">' + u.email + '</td>' +
-      '<td>' + roleSelect + '</td>' +
-      '<td style="color:#9ca3af;font-size:12px">' + fmtDate(u.created_at) + '</td>' +
-      '<td>' + removeBtn + '</td>' +
-      '</tr>';
-  }
-  h += '</tbody></table>';
-  el('tmList').innerHTML = h;
+  const { data: members } = await sb.from('users').select('*').order('created_at', { ascending: true });
+  const m = members || [];
+
+  const tmStatsEl = $('tmStats'); if (tmStatsEl) tmStatsEl.innerHTML = `
+    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${m.length}</div><div class="stat-label">Total Members</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#dc2626"></div><div><div class="stat-num">${m.filter(x => x.role === 'admin' || x.role === 'super_admin').length}</div><div class="stat-label">Admins</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#2563eb"></div><div><div class="stat-num">${m.filter(x => x.role === 'sales_rep').length}</div><div class="stat-label">Sales Reps</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">${m.filter(x => x.role === 'designer').length}</div><div class="stat-label">Designers</div></div></div>`;
+
+  if (!m.length) { mc('tmList', emptyState('No team members yet.', null, null)); return; }
+
+  const tmListEl = $('tmList'); if (!tmListEl) return;
+  tmListEl.innerHTML = `<table class="team-table">
+    <thead><tr>
+      <th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Actions</th>
+    </tr></thead>
+    <tbody>${m.map(u => `<tr>
+      <td>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:32px;height:32px;border-radius:50%;background:#0f75bc;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:#fff;flex-shrink:0">${(u.full_name || u.email).charAt(0).toUpperCase()}</div>
+          <div><div style="font-weight:500">${escapeHtml(u.full_name || '—')}</div>${u.id === CU.id ? '<div style="font-size:11px;color:#9ca3af">You</div>' : ''}</div>
+        </div>
+      </td>
+      <td style="color:#6b7280">${escapeHtml(u.email)}</td>
+      <td>
+        <select onchange="updateRole('${u.id}',this.value)" style="font-size:12px;padding:5px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;font-family:inherit;cursor:pointer" ${u.id === CU.id ? 'disabled title="Cannot change your own role"' : ''}>
+          <option value="sales_rep" ${u.role === 'sales_rep' ? 'selected' : ''}>Sales Rep</option>
+          <option value="designer" ${u.role === 'designer' ? 'selected' : ''}>Designer</option>
+          <option value="fulfillment" ${u.role === 'fulfillment' ? 'selected' : ''}>Fulfillment</option>
+          <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
+          <option value="super_admin" ${u.role === 'super_admin' ? 'selected' : ''}>Super Admin</option>
+        </select>
+      </td>
+      <td style="color:#9ca3af;font-size:12px">${fmtDate(u.created_at)}</td>
+      <td>${u.id !== CU.id ? `<button class="btn btn-red btn-sm" onclick="removeMember('${u.id}','${escJs(u.full_name || u.email)}')">Remove</button>` : '—'}</td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
 }
 
-function openInvite() { el('inviteModal').classList.add('open'); }
+function openInvite() { const m = $('inviteModal'); if (m) m.classList.add('open'); }
 function closeInvite() {
-  el('inviteModal').classList.remove('open');
-  el('invMsg').innerHTML = '';
-  el('inv_name').value = ''; el('inv_email').value = '';
+  const modal = $('inviteModal'); if (modal) modal.classList.remove('open');
+  mc('invMsg', '');
+  const invName = $('inv_name'), invEmail = $('inv_email'); if (invName) invName.value = ''; if (invEmail) invEmail.value = '';
   genPass();
 }
 
 function genPass() {
-  var c = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
-  var p = '';
-  for (var i = 0; i < 12; i++) p += c[Math.floor(Math.random() * c.length)];
-  if (el('inv_pass')) el('inv_pass').value = p;
+  const c = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#';
+  let p = '';
+  for (let i = 0; i < 12; i++) p += c[Math.floor(Math.random() * c.length)];
+  const el = $('inv_pass'); if (el) el.value = p;
 }
 
 async function createMember() {
-  var name = gv('inv_name'), email = gv('inv_email'), pass = gv('inv_pass');
-  var role = el('inv_role').value;
-  var msgEl = el('invMsg');
-  if (!name || !email || !pass) { msgEl.innerHTML = '<div style="color:#dc2626;font-size:13px;margin-bottom:12px">Please fill in all fields</div>'; return; }
-  var btn = el('invBtn');
-  btn.disabled = true; btn.textContent = 'Creating...';
-  var res = await sb.auth.signUp({ email: email, password: pass, options: { data: { full_name: name } } });
-  if (res.error) { msgEl.innerHTML = '<div style="color:#dc2626;font-size:13px;margin-bottom:12px">' + res.error.message + '</div>'; btn.disabled = false; btn.textContent = 'Create Account'; return; }
-  if (res.data.user) {
-    await sb.from('users').upsert({ id: res.data.user.id, email: email, full_name: name, role: role });
+  const name = v('inv_name'), email = v('inv_email'), pass = v('inv_pass');
+  const roleEl = $('inv_role'); const role = (roleEl && roleEl.value) ? roleEl.value : 'sales_rep';
+  const msg = $('invMsg');
+  if (!name || !email || !pass) { showErr(msg, '⚠ Please fill in all fields'); return; }
+  const btn = $('invBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating...'; }
+
+  const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { full_name: name } } });
+  if (error) { showErr(msg, '⚠ ' + error.message); if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; } return; }
+
+  if (data.user) {
+    await sb.from('users').upsert({ id: data.user.id, email, full_name: name, role });
   }
-  btn.disabled = false; btn.textContent = 'Create Account';
-  msgEl.innerHTML = '<div style="background:#dcfce7;color:#16a34a;border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px;line-height:1.6">Account created!<br><strong>Email:</strong> ' + email + '<br><strong>Password:</strong> ' + pass + '<br>Share these with ' + name + '.</div>';
-  setTimeout(loadTeam, 800);
+
+  if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
+  msg.innerHTML = `<div style="background:#dcfce7;color:#16a34a;border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px;line-height:1.6">
+    ✅ Account created!<br>
+    <strong>Email:</strong> ${escapeHtml(email)}<br>
+    <strong>Password:</strong> ${escapeHtml(pass)}<br>
+    Share these with ${escapeHtml(name)}.
+  </div>`;
+  setTimeout(() => loadTeam(), 800);
 }
 
 async function updateRole(userId, newRole) {
-  var res = await sb.from('users').update({ role: newRole }).eq('id', userId);
-  if (res.error) alert('Error updating role: ' + res.error.message);
+  const { error } = await sb.from('users').update({ role: newRole }).eq('id', userId);
+  if (error) alert('Error updating role: ' + error.message);
 }
 
-async function removeMember(btn) {
-  var userId = btn.getAttribute('data-id');
-  var name = btn.getAttribute('data-name');
-  if (!confirm('Remove ' + name + ' from the team?')) return;
+async function removeMember(userId, name) {
+  if (!confirm(`Remove ${name} from the team?`)) return;
   await sb.from('users').delete().eq('id', userId);
   loadTeam();
 }
 
+// ═══════════════════ START ═══════════════════
 boot();
 </script>
 </body>
