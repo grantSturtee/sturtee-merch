@@ -820,8 +820,14 @@ function sfRefresh() {
     '<div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">' + active + '</div><div class="stat-label">Active</div></div></div>' +
     '<div class="stat-card"><div class="stat-bar" style="background:#9ca3af"></div><div><div class="stat-num">' + (p.length - active) + '</div><div class="stat-label">Inactive</div></div></div>';
   if (!p.length) {
-    el('sfProducts').innerHTML = emptyHTML('No products yet. Add your first product.', '+ Add First Product', 'openAddProduct()');
-    return;
+  el('sfProducts').innerHTML = emptyHTML(
+    'No products yet. Add your first product.',
+    '+ Add First Product',
+    'openAddProduct()'
+  );
+  return;
+}
+
   }
   var h = '<div class="card-grid">';
   for (var i = 0; i < p.length; i++) {
