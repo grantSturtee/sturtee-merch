@@ -403,11 +403,8 @@ function flowBar(currentStatus) {
 }
 
 function emptyState(msg, btnLabel, btnFn) {
-  return `<div class="empty">
-    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-    <p>${msg}</p>
-    ${btnLabel ? `<button class="btn btn-blue" onclick="${btnFn}">${btnLabel}</button>` : ''}
-  </div>`;
+  var btnHtml = btnLabel ? '<button class="btn btn-blue" onclick="' + btnFn + '">' + btnLabel + '</button>' : '';
+  return '<div class="empty"><svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg><p>' + msg + '</p>' + btnHtml + '</div>';
 }
 
 async function updateStatus(id, status) {
@@ -820,19 +817,22 @@ function sfRender(filter) {
     );
     return;
   }
-  $('sfProducts').innerHTML = `<div class="card-grid">${list.map((p, i) => `
-    <div class="order-card">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-        <span style="font-size:15px;font-weight:600;color:#111827">${p.name}</span>
-        <div style="text-align:right"><span style="font-size:15px;font-weight:700;color:#0f75bc">$${p.price}</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div>
-      </div>
-      <div style="font-size:12px;color:#9ca3af;margin-bottom:8px">${p.category} · ${p.active ? '<span style="color:#16a34a">Active</span>' : '<span style="color:#9ca3af">Inactive</span>'}</div>
-      <div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5">${p.desc}</div>
-      <div class="btn-row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="toggleProduct(${i})">${p.active ? 'Deactivate' : 'Activate'}</button>
-        <button class="btn btn-red btn-full btn-sm" onclick="removeProduct(${i})">Remove</button>
-      </div>
-    </div>`).join('')}</div>`;
+  var sfHtml = list.map(function(p, i) {
+    var statusSpan = p.active ? '<span style="color:#16a34a">Active</span>' : '<span style="color:#9ca3af">Inactive</span>';
+    var toggleLabel = p.active ? 'Deactivate' : 'Activate';
+    return '<div class="order-card">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">' +
+      '<span style="font-size:15px;font-weight:600;color:#111827">' + p.name + '</span>' +
+      '<div style="text-align:right"><span style="font-size:15px;font-weight:700;color:#0f75bc">$' + p.price + '</span><span style="display:block;font-size:10px;color:#9ca3af">Base Price</span></div>' +
+      '</div>' +
+      '<div style="font-size:12px;color:#9ca3af;margin-bottom:8px">' + p.category + ' · ' + statusSpan + '</div>' +
+      '<div style="font-size:12px;color:#6b7280;margin-bottom:14px;line-height:1.5">' + (p.desc||'') + '</div>' +
+      '<div class="btn-row">' +
+      '<button class="btn btn-ghost btn-full btn-sm" onclick="toggleProduct(' + i + ')">' + toggleLabel + '</button>' +
+      '<button class="btn btn-red btn-full btn-sm" onclick="removeProduct(' + i + ')">Remove</button>' +
+      '</div></div>';
+  }).join('');
+  $('sfProducts').innerHTML = '<div class="card-grid">' + sfHtml + '</div>';
 }
 
 function openAddProduct() {
@@ -995,7 +995,7 @@ async function loadTeam() {
         </select>
       </td>
       <td style="color:#9ca3af;font-size:12px">${fmtDate(u.created_at)}</td>
-      <td>${u.id !== CU.id ? `<button class="btn btn-red btn-sm" onclick="removeMember('${u.id}','${u.full_name || u.email}')">Remove</button>` : '—'}</td>
+      <td>${u.id !== CU.id ? '<button class="btn btn-red btn-sm" onclick="removeMember(this)" data-id="' + u.id + '" data-name="' + (u.full_name||u.email) + '">Remove</button>' : '—'}</td>
     </tr>`).join('')}
     </tbody>
   </table>`;
@@ -1045,8 +1045,10 @@ async function updateRole(userId, newRole) {
   if (error) alert('Error updating role: ' + error.message);
 }
 
-async function removeMember(userId, name) {
-  if (!confirm(`Remove ${name} from the team?`)) return;
+async function removeMember(el) {
+  var userId = el.getAttribute('data-id');
+  var name = el.getAttribute('data-name');
+  if (!confirm('Remove ' + name + ' from the team?')) return;
   await sb.from('users').delete().eq('id', userId);
   loadTeam();
 }
