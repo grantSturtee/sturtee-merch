@@ -214,8 +214,8 @@ const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
 let currentUser=null,currentProfile=null,currentPage='dashboard';
 
 const NAV_BY_ROLE={
-  super_admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel'],
-  admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel'],
+  super_admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel','team'],
+  admin:['dashboard','quote-request','design-queue','approvals','fulfillment','storefront','admin-panel','team'],
   sales_rep:['dashboard','quote-request','approvals','storefront'],
   designer:['dashboard','design-queue','approvals'],
   fulfillment:['dashboard','fulfillment']
@@ -227,7 +227,8 @@ const NAV={
   'approvals':{label:'Approvals',icon:'<path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>'},
   'fulfillment':{label:'Fulfillment',icon:'<path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>'},
   'storefront':{label:'Storefront',icon:'<path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>'},
-  'admin-panel':{label:'Admin',icon:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>'}
+  'admin-panel':{label:'Admin',icon:'<path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/>'},
+  'team':{label:'Team',icon:'<path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>'}
 };
 
 async function boot(){
@@ -309,7 +310,7 @@ function navigate(page){
   document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));
   const el=document.getElementById('nav-'+page);
   if(el)el.classList.add('active');
-  const renders={dashboard:renderDashboard,'quote-request':renderQuoteRequest,'design-queue':renderDesignQueue,approvals:renderApprovals,fulfillment:renderFulfillment,storefront:renderStorefront,'admin-panel':renderAdminPanel};
+  const renders={dashboard:renderDashboard,'quote-request':renderQuoteRequest,'design-queue':renderDesignQueue,approvals:renderApprovals,fulfillment:renderFulfillment,storefront:renderStorefront,'admin-panel':renderAdminPanel,team:renderTeam};
   (renders[page]||renderDashboard)();
 }
 
@@ -653,6 +654,204 @@ async function renderAdminPanel(){
     <div class="metric-card"><div><div class="metric-label">Est. Pipeline Value</div><div class="metric-val">$${revenue.toLocaleString()}</div><div style="font-size:11px;color:#6b7280">Based on client budgets</div></div><span>💵</span></div>
     <div class="metric-card"><div><div class="metric-label">Rush Orders</div><div class="metric-val">${rush}</div>${rush>0?'<div style="font-size:11px;color:#dc2626">Needs attention</div>':''}</div><span>⚡</span></div>
     <div class="metric-card"><div><div class="metric-label">Avg Order Size</div><div class="metric-val">${avgQty} units</div></div><span>📦</span></div>`;
+}
+
+// ── TEAM MANAGEMENT ──
+async function renderTeam(){
+  document.getElementById('mainContent').innerHTML=`<div class="page">
+    <div class="header-row">
+      <div class="page-header" style="margin-bottom:0"><h1>Team Management</h1><p>Invite and manage your team members</p></div>
+      <button class="btn-sm-dark" onclick="showInviteModal()">+ Invite Member</button>
+    </div><br>
+    <div class="stat-grid" id="teamStats"><div class="stat-card"><div class="spinner" style="width:20px;height:20px;border-width:2px"></div></div></div>
+
+    <!-- INVITE MODAL -->
+    <div id="inviteModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:100;display:none;align-items:center;justify-content:center">
+      <div style="background:#fff;border-radius:14px;padding:28px;width:100%;max-width:440px;margin:20px;box-shadow:0 20px 60px rgba(0,0,0,.2)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <h2 style="font-size:17px;font-weight:700">Invite Team Member</h2>
+          <button onclick="hideInviteModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9ca3af;line-height:1">×</button>
+        </div>
+        <div id="inviteMsg"></div>
+        <div class="form-group"><label>Full Name</label><input class="form-input" id="inv_name" placeholder="e.g. Sarah Johnson"></div>
+        <div class="form-group"><label>Email Address</label><input class="form-input" id="inv_email" type="email" placeholder="sarah@sturtee.com"></div>
+        <div class="form-group"><label>Temporary Password</label>
+          <div style="position:relative">
+            <input class="form-input" id="inv_pass" type="text" placeholder="They'll change this on first login" style="padding-right:90px">
+            <button onclick="genPass()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:#f3f4f6;border:none;border-radius:5px;padding:4px 8px;font-size:11px;cursor:pointer;font-family:inherit;color:#374151">Generate</button>
+          </div>
+        </div>
+        <div class="form-group"><label>Role</label>
+          <select class="form-select" id="inv_role">
+            <option value="admin">Admin</option>
+            <option value="sales_rep">Sales Rep</option>
+            <option value="designer">Designer</option>
+            <option value="fulfillment">Fulfillment</option>
+            <option value="super_admin">Super Admin</option>
+          </select>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px">
+          <button class="btn-outline" onclick="hideInviteModal()">Cancel</button>
+          <button class="btn-dark" id="inviteBtn" onclick="createTeamMember()">Create Account</button>
+        </div>
+        <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:8px;padding:10px 12px;margin-top:14px;font-size:12px;color:#0369a1">
+          💡 Share the email + temp password with the team member. They can sign in immediately and update their password in their account settings.
+        </div>
+      </div>
+    </div>
+
+    <div class="section-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div><div class="section-title">All Team Members</div><div class="section-sub" style="margin-bottom:0">Manage roles and access levels</div></div>
+        <div class="tab-bar" style="margin-bottom:0">
+          <div class="tab active" onclick="setTab(this.parentElement,this);filterTeam('all')">All</div>
+          <div class="tab" onclick="setTab(this.parentElement,this);filterTeam('admin')">Admins</div>
+          <div class="tab" onclick="setTab(this.parentElement,this);filterTeam('sales_rep')">Sales</div>
+          <div class="tab" onclick="setTab(this.parentElement,this);filterTeam('designer')">Design</div>
+          <div class="tab" onclick="setTab(this.parentElement,this);filterTeam('fulfillment')">Fulfillment</div>
+        </div>
+      </div>
+      <div id="teamList"><div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">Loading team...</div></div>
+    </div>
+  </div>`;
+
+  await loadTeam();
+}
+
+async function loadTeam(){
+  const{data:members}=await sb.from('users').select('*').order('created_at',{ascending:true});
+  window._teamMembers=members||[];
+
+  // Stats
+  const m=window._teamMembers;
+  document.getElementById('teamStats').innerHTML=`
+    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${m.length}</div><div class="stat-label">Total Members</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#dc2626"></div><div><div class="stat-num">${m.filter(x=>x.role==='admin'||x.role==='super_admin').length}</div><div class="stat-label">Admins</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#2563eb"></div><div><div class="stat-num">${m.filter(x=>x.role==='sales_rep').length}</div><div class="stat-label">Sales Reps</div></div></div>
+    <div class="stat-card"><div class="stat-bar" style="background:#7c3aed"></div><div><div class="stat-num">${m.filter(x=>x.role==='designer').length}</div><div class="stat-label">Designers</div></div></div>`;
+
+  renderTeamList(window._teamMembers);
+}
+
+function filterTeam(role){
+  const m=window._teamMembers||[];
+  renderTeamList(role==='all'?m:m.filter(x=>x.role===role));
+}
+
+function renderTeamList(members){
+  const el=document.getElementById('teamList');
+  if(!members.length){el.innerHTML=`<div style="text-align:center;padding:30px;color:#9ca3af;font-size:13px">No team members found.</div>`;return;}
+
+  const roleColors={super_admin:'badge-super_admin',admin:'badge-admin',sales_rep:'badge-sales_rep',designer:'badge-designer',fulfillment:'badge-fulfillment'};
+  const roleLabels={super_admin:'Super Admin',admin:'Admin',sales_rep:'Sales Rep',designer:'Designer',fulfillment:'Fulfillment'};
+
+  el.innerHTML=`<table style="width:100%;border-collapse:collapse">
+    <thead><tr style="border-bottom:1px solid #f3f4f6">
+      <th style="text-align:left;padding:8px 12px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Member</th>
+      <th style="text-align:left;padding:8px 12px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Email</th>
+      <th style="text-align:left;padding:8px 12px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Role</th>
+      <th style="text-align:left;padding:8px 12px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Joined</th>
+      <th style="text-align:left;padding:8px 12px;font-size:11px;color:#9ca3af;font-weight:600;text-transform:uppercase;letter-spacing:.05em">Actions</th>
+    </tr></thead>
+    <tbody>${members.map(m=>`
+    <tr style="border-bottom:1px solid #f9fafb" onmouseover="this.style.background='#fafafa'" onmouseout="this.style.background=''">
+      <td style="padding:12px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:34px;height:34px;border-radius:50%;background:#e5e7eb;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px;color:#6b7280;flex-shrink:0">${(m.full_name||m.email).charAt(0).toUpperCase()}</div>
+          <div><div style="font-size:13px;font-weight:500">${m.full_name||'—'}</div>${m.id===currentUser.id?'<div style="font-size:11px;color:#9ca3af">You</div>':''}</div>
+        </div>
+      </td>
+      <td style="padding:12px;font-size:13px;color:#6b7280">${m.email}</td>
+      <td style="padding:12px">
+        <select onchange="updateRole('${m.id}',this.value)" style="font-size:12px;padding:4px 8px;border:1px solid #e5e7eb;border-radius:6px;background:#f9fafb;font-family:inherit;color:#374151;cursor:pointer" ${m.id===currentUser.id?'disabled':''}>
+          <option value="sales_rep" ${m.role==='sales_rep'?'selected':''}>Sales Rep</option>
+          <option value="designer" ${m.role==='designer'?'selected':''}>Designer</option>
+          <option value="fulfillment" ${m.role==='fulfillment'?'selected':''}>Fulfillment</option>
+          <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
+          <option value="super_admin" ${m.role==='super_admin'?'selected':''}>Super Admin</option>
+        </select>
+      </td>
+      <td style="padding:12px;font-size:12px;color:#9ca3af">${m.created_at?new Date(m.created_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'—'}</td>
+      <td style="padding:12px">
+        ${m.id!==currentUser.id?`<button onclick="removeMember('${m.id}','${m.full_name||m.email}')" style="font-size:12px;padding:5px 10px;border:1px solid #fecaca;border-radius:6px;background:#fff;color:#dc2626;cursor:pointer;font-family:inherit">Remove</button>`:'<span style="font-size:12px;color:#d1d5db">—</span>'}
+      </td>
+    </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function showInviteModal(){
+  const m=document.getElementById('inviteModal');
+  m.style.display='flex';
+  genPass();
+}
+function hideInviteModal(){
+  document.getElementById('inviteModal').style.display='none';
+  document.getElementById('inviteMsg').innerHTML='';
+  document.getElementById('inv_name').value='';
+  document.getElementById('inv_email').value='';
+}
+
+function genPass(){
+  const chars='ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+  let p='';
+  for(let i=0;i<12;i++)p+=chars[Math.floor(Math.random()*chars.length)];
+  document.getElementById('inv_pass').value=p;
+}
+
+async function createTeamMember(){
+  const name=document.getElementById('inv_name').value.trim();
+  const email=document.getElementById('inv_email').value.trim();
+  const pass=document.getElementById('inv_pass').value.trim();
+  const role=document.getElementById('inv_role').value;
+  const msg=document.getElementById('inviteMsg');
+  const btn=document.getElementById('inviteBtn');
+
+  if(!name||!email||!pass){
+    msg.innerHTML=`<div class="error-msg" style="display:block">Please fill in all fields.</div>`;return;
+  }
+
+  btn.disabled=true;btn.textContent='Creating...';
+
+  // Use Supabase admin signup via anon key (creates unconfirmed user)
+  const{data,error}=await sb.auth.signUp({
+    email,
+    password:pass,
+    options:{data:{full_name:name}}
+  });
+
+  if(error){
+    msg.innerHTML=`<div class="error-msg" style="display:block">${error.message}</div>`;
+    btn.disabled=false;btn.textContent='Create Account';return;
+  }
+
+  // If user was created, insert profile with correct role
+  if(data.user){
+    await sb.from('users').upsert({
+      id:data.user.id,
+      email,
+      full_name:name,
+      role
+    });
+  }
+
+  btn.disabled=false;btn.textContent='Create Account';
+  msg.innerHTML=`<div class="success-msg" style="display:block">✅ Account created! Share these credentials:<br><strong>${email}</strong> / <strong>${pass}</strong></div>`;
+
+  // Refresh team list after short delay
+  setTimeout(()=>loadTeam(),1000);
+}
+
+async function updateRole(userId,newRole){
+  const{error}=await sb.from('users').update({role:newRole}).eq('id',userId);
+  if(error){alert('Error updating role: '+error.message);}
+}
+
+async function removeMember(userId,name){
+  if(!confirm(`Remove ${name} from the team? This cannot be undone.`))return;
+  const{error}=await sb.from('users').delete().eq('id',userId);
+  if(error){alert('Error: '+error.message);return;}
+  loadTeam();
 }
 
 boot();
