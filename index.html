@@ -41,6 +41,7 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
 .login-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
 .login-inner{width:100%;max-width:420px}
 .login-logo{display:flex;flex-direction:column;align-items:center;margin-bottom:24px}
+.login-logo img{width:100px;height:auto;object-fit:contain;margin-bottom:14px}
 .logo-icon{width:52px;height:52px;background:#0f75bc;border-radius:14px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
 .login-inner h1{font-size:22px;font-weight:700;text-align:center;color:#111827}
 .subtitle{font-size:13px;color:#6b7280;text-align:center;margin-top:4px}
@@ -203,6 +204,7 @@ body{font-family:'DM Sans',sans-serif;background:#f1f3f5;color:#111827;font-size
   <div class="login-wrap">
     <div class="login-inner">
       <div class="login-logo">
+        <img src="./sturdy-logo.png" alt="Sturdy" onerror="this.style.display='none'">
         <div class="logo-icon">
           <svg width="26" height="26" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
         </div>
@@ -487,6 +489,24 @@ function orderDisplayName(o) {
   return '—';
 }
 
+// Stub for AI summary (replace with server-side OpenAI call later)
+function summarizeOrder(order) {
+  if (!order) return '—';
+  const parts = [];
+  if (order.garment_type) parts.push(order.garment_type);
+  if (order.estimated_qty_min || order.estimated_qty_max) parts.push((order.estimated_qty_min || order.estimated_qty_max) + ' units');
+  if (order.order_context) parts.push(order.order_context);
+  if (order.event_name) parts.push(order.event_name);
+  return parts.length ? parts.join(' · ') : (order.design_direction || '').slice(0, 60) + (order.design_direction && order.design_direction.length > 60 ? '…' : '') || '—';
+}
+
+async function auditLog(action, entityType, entityId, payload) {
+  if (!sb || !CU) return;
+  try {
+    await sb.from('audit_log').insert({ user_id: CU.id, action, entity_type: entityType, entity_id: entityId, payload: payload || null });
+  } catch (e) { console.warn('[audit_log]', e); }
+}
+
 function pill(status) {
   return `<span class="pill pill-${status}">${STATUS_LABELS[status] || status}</span>`;
 }
@@ -512,6 +532,7 @@ function emptyState(msg, btnLabel, btnFn) {
 async function updateStatus(id, status) {
   const { error } = await sb.from('orders').update({ status, updated_at: new Date().toISOString() }).eq('id', id);
   if (error) { alert('Error: ' + error.message); return false; }
+  auditLog('order_status_change', 'order', id, { status });
   return true;
 }
 
@@ -592,6 +613,7 @@ async function openOrder(id) {
       <button class="modal-close" onclick="closeOrderModal()">×</button>
     </div>
     ${_flow}
+    <div class="notes-box" style="margin-bottom:14px"><label>Summary (auto)</label>${escapeHtml(summarizeOrder(o))}</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 24px;margin-bottom:16px">
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Order #</div><div style="font-family:monospace;font-size:13px">${escapeHtml(o.order_number || '—')}</div></div>
       <div><div style="font-size:11px;color:#9ca3af;margin-bottom:2px">Status</div>${pill(o.status)}</div>
@@ -651,13 +673,16 @@ function chSearchDebounce() {
 
 async function loadChaptersList() {
   const errEl = $('chErr'); const listEl = $('chList'); if (!listEl) return;
-  let q = sb.from('chapters').select('*').order('chapter_name');
-  if (CP?.role === 'sales_rep') q = q.eq('assigned_sales_rep', CU.id);
-  const { data: chapters, error } = await q;
+  const { data: chapters, error } = await sb.from('chapters').select('*').order('chapter_name');
   if (error) { console.error('[Chapters]', error); if (errEl) { errEl.textContent = error.message; errEl.style.display = 'block'; } listEl.innerHTML = emptyState('Failed to load chapters.', null, null); return; }
   window._chaptersList = chapters || [];
   window._chapterMap = {};
   (chapters || []).forEach(c => { window._chapterMap[c.id] = c; });
+  const repIds = [...new Set((chapters || []).map(c => c.assigned_sales_rep).filter(Boolean))];
+  if (repIds.length && (CP?.role === 'admin' || CP?.role === 'super_admin')) {
+    const { data: users } = await sb.from('users').select('id,full_name').in('id', repIds);
+    window._chapterUserMap = {}; (users || []).forEach(u => { window._chapterUserMap[u.id] = u.full_name || u.id; });
+  } else { window._chapterUserMap = {}; }
   chFilterList();
 }
 
@@ -671,7 +696,7 @@ function chFilterList() {
       <div class="card-header"><h3>${escapeHtml(c.chapter_name)}</h3><span class="pill pill-${c.status === 'active' ? 'complete' : 'cancelled'}">${c.status || 'active'}</span></div>
       <div class="card-sub">${escapeHtml(c.school || '—')} · ${escapeHtml(c.org_type || '')}</div>
       <div class="card-meta">
-        <div class="meta-row"><label>Assigned</label><span>—</span></div>
+        <div class="meta-row"><label>Assigned</label><span>${escapeHtml((window._chapterUserMap && window._chapterUserMap[c.assigned_sales_rep]) || '—')}</span></div>
         <div class="meta-row"><label>Open orders</label><span id="chOpen_${c.id}">—</span></div>
       </div>
     </div>`).join('')}</div>`;
@@ -684,9 +709,16 @@ function loadChapterOpenCount(chapterId) {
   });
 }
 
+function chapterCanEdit(c) {
+  if (!c || !CU) return false;
+  return (CP?.role === 'admin' || CP?.role === 'super_admin') || (c.assigned_sales_rep === CU.id);
+}
+
 async function openChapterDetail(chapterId) {
   const detailEl = $('chDetail'); const listEl = $('chList'); if (!detailEl || !listEl) return;
   const c = window._chapterMap && window._chapterMap[chapterId]; if (!c) return;
+  const canEdit = chapterCanEdit(c);
+  const assignedName = (window._chapterUserMap && window._chapterUserMap[c.assigned_sales_rep]) || '—';
   listEl.style.display = 'none';
   detailEl.style.display = 'block';
   detailEl.innerHTML = `<div class="page"><div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
@@ -698,21 +730,61 @@ async function openChapterDetail(chapterId) {
     <div class="card-meta"><div class="meta-row"><label>School</label><span>${escapeHtml(c.school || '—')}</span></div>
     <div class="meta-row"><label>Org type</label><span>${escapeHtml(c.org_type || '—')}</span></div>
     <div class="meta-row"><label>National org</label><span>${escapeHtml(c.national_org || '—')}</span></div>
-    <div class="meta-row"><label>Campus</label><span>${escapeHtml(c.campus || '—')}</span></div></div>
+    <div class="meta-row"><label>Campus</label><span>${escapeHtml(c.campus || '—')}</span></div>
+    <div class="meta-row"><label>Assigned sales rep</label><span>${escapeHtml(assignedName)}</span></div></div>
     ${c.notes ? `<div class="notes-box"><label>Notes</label>${escapeHtml(c.notes)}</div>` : ''}
+    ${canEdit ? `<button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="openEditChapter('${chapterId}')">Edit chapter</button>` : ''}
   </div>
   <div class="section-card">
     <div class="section-title">Contacts</div>
     <div id="chContacts"><div class="spinner-sm"></div></div>
-    <button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="openAddContact('${chapterId}')">+ Add Contact</button>
+    ${canEdit ? `<button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="openAddContact('${chapterId}')">+ Add Contact</button>` : ''}
   </div>
   <div class="section-card">
     <div class="section-title">Orders</div>
     <div id="chOrders"><div class="spinner-sm"></div></div>
-    <button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="goToQuoteWithChapter('${chapterId}')">Create New Quote for this Chapter</button>
+    ${canEdit ? `<button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="goToQuoteWithChapter('${chapterId}')">Create New Quote for this Chapter</button>` : ''}
   </div></div>`;
   await loadChapterContacts(chapterId);
   await loadChapterOrders(chapterId);
+}
+
+function openEditChapter(chapterId) {
+  const c = window._chapterMap && window._chapterMap[chapterId]; if (!c) return;
+  const canEdit = chapterCanEdit(c); if (!canEdit) return;
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'editChapterModal';
+  modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Edit chapter</h2><button class="modal-close" onclick="$('editChapterModal').remove()">×</button></div>
+  <div id="ecMsg" class="err" style="display:none"></div>
+  <div class="form-group"><label>School *</label><input class="form-input" id="ec_school" value="${escapeHtml(c.school || '')}"></div>
+  <div class="form-group"><label>Chapter name *</label><input class="form-input" id="ec_chapter_name" value="${escapeHtml(c.chapter_name || '')}"></div>
+  <div class="form-row"><div class="form-group"><label>Org type</label><input class="form-input" id="ec_org_type" value="${escapeHtml(c.org_type || '')}"></div><div class="form-group"><label>National org</label><input class="form-input" id="ec_national_org" value="${escapeHtml(c.national_org || '')}"></div></div>
+  <div class="form-group"><label>Campus</label><input class="form-input" id="ec_campus" value="${escapeHtml(c.campus || '')}"></div>
+  <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="ec_notes" style="min-height:60px">${escapeHtml(c.notes || '')}</textarea></div>
+  <div class="form-group" id="ecAssignWrap"><label>Assigned sales rep</label><select class="form-select" id="ec_assigned_sales_rep"><option value="">— None —</option></select></div>
+  <button class="btn btn-blue btn-full" onclick="saveEditChapter('${chapterId}')">Save</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  if (CP?.role === 'admin' || CP?.role === 'super_admin') {
+    sb.from('users').select('id,full_name').in('role', ['sales_rep', 'admin', 'super_admin']).then(({ data: users }) => {
+      const sel = $('ec_assigned_sales_rep'); if (!sel) return;
+      sel.innerHTML = '<option value="">— None —</option>' + (users || []).map(u => `<option value="${u.id}" ${u.id === c.assigned_sales_rep ? 'selected' : ''}>${escapeHtml(u.full_name || u.email || u.id)}</option>`).join('');
+    });
+  } else { const w = $('ecAssignWrap'); if (w) w.style.display = 'none'; }
+}
+
+async function saveEditChapter(chapterId) {
+  const msg = $('ecMsg'); const school = v('ec_school'); const chapterName = v('ec_chapter_name');
+  if (!school || !chapterName) { showErr(msg, 'School and chapter name required'); return; }
+  const assigned = ($('ec_assigned_sales_rep') && $('ec_assigned_sales_rep').value) || null;
+  const { error } = await sb.from('chapters').update({
+    school, chapter_name: chapterName, org_type: v('ec_org_type') || null, national_org: v('ec_national_org') || null,
+    campus: v('ec_campus') || null, notes: v('ec_notes') || null, assigned_sales_rep: assigned || null, updated_at: new Date().toISOString()
+  }).eq('id', chapterId);
+  if (error) { showErr(msg, error.message); return; }
+  const c = window._chapterMap && window._chapterMap[chapterId]; if (c) { c.school = school; c.chapter_name = chapterName; c.assigned_sales_rep = assigned; }
+  auditLog('chapter_updated', 'chapter', chapterId, null);
+  $('editChapterModal')?.remove();
+  openChapterDetail(chapterId);
 }
 
 function closeChapterDetail() {
@@ -757,7 +829,7 @@ function openAddContact(chapterId) {
   <div id="acMsg" class="err" style="display:none"></div>
   <div class="form-group"><label>Name *</label><input class="form-input" id="ac_name" placeholder="Full name"></div>
   <div class="form-group"><label>Role / Title</label><input class="form-input" id="ac_role" placeholder="e.g. Merch Chair"></div>
-  <div class="form-row"><div class="form-group"><label>Email</label><input class="form-input" id="ac_email" type="email"></div><div class="form-group"><label>Phone</label><input class="form-input" id="ac_phone"></div></div>
+  <div class="form-row"><div class="form-group"><label>Phone *</label><input class="form-input" id="ac_phone" placeholder="Required"></div><div class="form-group"><label>Email (optional)</label><input class="form-input" id="ac_email" type="email"></div></div>
   <div class="form-group"><label>Primary contact?</label><select class="form-select" id="ac_primary"><option value="false">No</option><option value="true">Yes</option></select></div>
   <button class="btn btn-blue btn-full" onclick="saveContact('${chapterId}')">Save Contact</button></div>`;
   document.body.appendChild(modal);
@@ -765,26 +837,35 @@ function openAddContact(chapterId) {
 }
 
 async function saveContact(chapterId) {
-  const name = v('ac_name'); const msgEl = $('acMsg'); if (!name) { showErr(msgEl, 'Name required'); return; }
+  const name = v('ac_name'); const phone = v('ac_phone'); const msgEl = $('acMsg');
+  if (!name) { showErr(msgEl, 'Name required'); return; }
+  if (!phone) { showErr(msgEl, 'Phone required'); return; }
   const primary = ($('ac_primary') && $('ac_primary').value) === 'true';
   const { error } = await sb.from('chapter_contacts').insert({ chapter_id: chapterId, name, role_title: v('ac_role'), email: v('ac_email'), phone: v('ac_phone'), is_primary: primary });
   if (error) { showErr(msgEl, error.message); return; }
+  auditLog('chapter_contact_added', 'chapter', chapterId, null);
   $('addContactModal')?.remove();
   loadChapterContacts(chapterId);
 }
 
 // ═══════════════════ QUOTE REQUEST (Intake Wizard) ═══════════════════
-const INTAKE_STEPS = ['chapter','specs','design','timeline','invoice'];
+const INTAKE_STEPS = ['chapter','orderType','specs','design','timeline','invoice'];
+const INTAKE_STEP_LABELS = ['Chapter','Order Type','Specs','Design Direction','Timeline & Delivery','Invoice'];
 let _intakeStep = 0;
 let _intakeDraftId = null;
+let _intakeRefUrls = []; // reference image URLs after upload
+
+const ORDER_CONTEXTS = ['Event','General / Ongoing Merch','Rush / Recruitment','Philanthropy','Formal / Social','Intramurals / Sports','Parent Weekend','Alumni'];
 
 function pgQuote() {
   _intakeStep = 0;
+  _intakeRefUrls = [];
   const prefillId = window._quotePrefillChapterId || null;
   window._quotePrefillChapterId = null;
   mc('mainContent', `<div class="page">
     <div class="page-header"><h1>New Quote / Order Intake</h1><p>Guided intake — complete all steps to submit to design</p></div>
     <div id="quoteMsg" class="err" style="display:none"></div>
+    <div id="quoteStepErrors" class="err" style="display:none;margin-bottom:12px"></div>
     <div class="wizard-steps" id="intakeWizardSteps"></div>
     <div id="intakeStepContent"></div>
     <div id="intakeActions" style="margin-top:20px"></div>
@@ -794,72 +875,196 @@ function pgQuote() {
 }
 
 function renderIntakeWizardSteps() {
-  const labels = ['Chapter & Event','Order Specs','Design Direction','Timeline & Delivery','Invoice & Contacts'];
   const el = $('intakeWizardSteps'); if (!el) return;
-  el.innerHTML = INTAKE_STEPS.map((s, i) => `<div class="wizard-step ${i === _intakeStep ? 'active' : i < _intakeStep ? 'done' : ''}" onclick="setIntakeStep(${i})">${labels[i]}</div>`).join('');
+  el.innerHTML = INTAKE_STEPS.map((s, i) => `<div class="wizard-step ${i === _intakeStep ? 'active' : i < _intakeStep ? 'done' : ''}" onclick="setIntakeStep(${i})">${INTAKE_STEP_LABELS[i]}</div>`).join('');
 }
 
-function setIntakeStep(i) { _intakeStep = i; renderIntakeWizardSteps(); renderIntakeStep(null); }
+function setIntakeStep(i) { _intakeStep = i; renderIntakeWizardSteps(); renderIntakeStep(null); updateIntakeButtons(); }
+
+function intakeValidation(step) {
+  const missing = [];
+  if (step === 0) {
+    const existing = ($('q_chapter_existing') && $('q_chapter_existing').checked);
+    if (existing) {
+      const chVal = $('q_chapter') && $('q_chapter').value;
+      if (!chVal) missing.push('Select a chapter');
+    } else {
+      if (!v('q_school')) missing.push('School');
+      if (!v('q_chapter_name')) missing.push('Chapter name');
+      if (!v('q_contact_name')) missing.push('Contact name');
+      if (!v('q_contact_phone')) missing.push('Contact phone');
+    }
+  } else if (step === 1) {
+    if (!($('q_order_type') && $('q_order_type').value)) missing.push('Order type');
+    if (!($('q_order_context') && $('q_order_context').value)) missing.push('Order context');
+    const ctx = $('q_order_context') && $('q_order_context').value;
+    if (ctx === 'Event' && !v('q_event_date')) missing.push('Event date');
+  } else if (step === 2) {
+    const qtyMin = parseInt(v('q_qty_min'), 10); const qtyMax = parseInt(v('q_qty_max'), 10);
+    if (!(qtyMin >= 1 && qtyMax >= qtyMin)) missing.push('Valid quantity range (min ≤ max)');
+    if (!v('q_colors')) missing.push('Garment colors');
+    if (!v('q_print_locations')) missing.push('Print locations');
+  } else if (step === 3) {
+    if (!v('q_design_direction') || v('q_design_direction').length < 20) missing.push('Design direction (2–3 sentences)');
+    if (!v('q_required_text')) missing.push('Required text');
+    const refs = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    const hasRefs = refs.length > 0 || (_intakeRefUrls && _intakeRefUrls.length > 0);
+    if (!hasRefs) missing.push('Reference links or upload at least one image');
+  } else if (step === 4) {
+    if (!v('q_needed_by')) missing.push('Needed by date');
+    if (!($('q_delivery') && $('q_delivery').value)) missing.push('Delivery method');
+  } else if (step === 5) {
+    if (!v('q_invoice_email')) missing.push('Invoice email');
+  }
+  return { ok: missing.length === 0, missing };
+}
+
+function updateIntakeButtons() {
+  const errEl = $('quoteStepErrors'); const actions = $('intakeActions');
+  const v = intakeValidation(_intakeStep);
+  if (errEl) { errEl.style.display = v.ok ? 'none' : 'block'; errEl.textContent = v.ok ? '' : 'Missing: ' + v.missing.join(', '); }
+  const nextBtn = document.querySelector('#intakeActions button[onclick^="setIntakeStep"]');
+  const submitBtn = $('btnSubmitToDesign');
+  if (nextBtn) nextBtn.disabled = !v.ok;
+  if (submitBtn) submitBtn.disabled = !v.ok;
+}
 
 function renderIntakeStep(prefillChapterId) {
   const content = $('intakeStepContent'); const actions = $('intakeActions'); if (!content) return;
   if (_intakeStep === 0) {
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Chapter & Event Info *</div>
-      <div class="form-group"><label>Chapter *</label><select class="form-select" id="q_chapter"><option value="">— Select or leave blank for ad‑hoc —</option></select></div>
-      <div class="form-row"><div class="form-group"><label>School / Client name *</label><input class="form-input" id="q_school" placeholder="e.g. Ohio State"></div><div class="form-group"><label>Chapter name *</label><input class="form-input" id="q_chapter_name" placeholder="e.g. Alpha Phi"></div></div>
-      <div class="form-row"><div class="form-group"><label>Event type *</label><select class="form-select" id="q_event_type"><option value="formal">Formal</option><option value="recruitment">Recruitment</option><option value="philanthropy">Philanthropy</option><option value="general">General</option><option value="other">Other</option></select></div><div class="form-group"><label>Event date</label><input class="form-input" id="q_event_date" type="date"></div></div>
+      <div class="form-section"><div class="form-section-title">Is this an existing chapter we work with?</div>
+      <div class="form-group" style="display:flex;gap:16px;margin-bottom:16px">
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_existing" onchange="toggleIntakeChapterForm()"> Existing</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_new" onchange="toggleIntakeChapterForm()"> New</label>
+      </div>
+      <div id="q_existing_block" style="display:none">
+        <div class="form-group"><label>Select chapter *</label><input type="text" class="form-input" id="q_chapter_search" placeholder="Search school or chapter..." oninput="filterChapterSelect()"><select class="form-select" id="q_chapter" style="margin-top:6px" onchange="onIntakeChapterSelect()"><option value="">— Select —</option></select></div>
+      </div>
+      <div id="q_new_block" style="display:none">
+        <div class="form-section-title" style="margin-top:8px">Create New Chapter</div>
+        <div class="form-row"><div class="form-group"><label>School *</label><input class="form-input" id="q_school" placeholder="e.g. Ohio State"></div><div class="form-group"><label>Chapter name *</label><input class="form-input" id="q_chapter_name" placeholder="e.g. Alpha Phi"></div></div>
+        <div class="form-row"><div class="form-group"><label>Org type (optional)</label><input class="form-input" id="q_org_type" placeholder="Fraternity / Sorority"></div><div class="form-group"><label>Notes (optional)</label><input class="form-input" id="q_notes" placeholder=""></div></div>
+        <div class="form-section-title" style="margin-top:16px">Primary contact</div>
+        <div class="form-group"><label>Contact name *</label><input class="form-input" id="q_contact_name" placeholder="Full name"></div>
+        <div class="form-row"><div class="form-group"><label>Contact phone *</label><input class="form-input" id="q_contact_phone" placeholder="Required"></div><div class="form-group"><label>Contact email (optional)</label><input class="form-input" id="q_contact_email" type="email"></div></div>
+        <div class="form-group"><label>Role / title (optional)</label><input class="form-input" id="q_contact_role" placeholder="e.g. Merch Chair"></div>
+      </div>
       </div></div>`;
+    document.getElementById('q_chapter_new').checked = true; toggleIntakeChapterForm();
     loadChapterSelect(prefillChapterId);
   } else if (_intakeStep === 1) {
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Order Specs *</div>
-      <div class="form-row"><div class="form-group"><label>Garment type *</label><select class="form-select" id="q_garment"><option value="tee">T-Shirt</option><option value="hoodie">Hoodie</option><option value="crewneck">Crewneck</option><option value="tank">Tank</option><option value="longsleeve">Long Sleeve</option><option value="polo">Polo</option><option value="hat">Hat</option><option value="other">Other</option></select></div><div class="form-group"><label>Fit *</label><select class="form-select" id="q_fit"><option value="standard">Standard</option><option value="oversized">Oversized</option><option value="heavyweight">Heavyweight</option></select></div></div>
-      <div class="form-group"><label>Estimated qty range *</label><div class="form-row"><input class="form-input" id="q_qty_min" type="number" min="1" placeholder="Min"><input class="form-input" id="q_qty_max" type="number" min="1" placeholder="Max"></div></div>
-      <div class="form-group"><label>Garment colors (comma-separated) *</label><input class="form-input" id="q_colors" placeholder="e.g. Navy, White"></div>
-      <div class="form-group"><label>Print locations *</label><input class="form-input" id="q_print_locations" placeholder="e.g. front, back, sleeve"></div>
-      <div class="form-group"><label>Budget range *</label><select class="form-select" id="q_budget_range"><option value="under_20">Under $20</option><option value="20_25">$20–25</option><option value="25_30">$25–30</option><option value="open">Open</option></select></div>
+      <div class="form-section"><div class="form-section-title">Order Type *</div>
+      <div class="form-group"><label>Order type *</label><select class="form-select" id="q_order_type"><option value="">— Select —</option><option value="quote">Quote</option><option value="order">Order</option></select></div>
+      <div class="form-section-title">Order Context *</div>
+      <div class="form-group"><label>Order context *</label><select class="form-select" id="q_order_context" onchange="toggleEventDateField()">${ORDER_CONTEXTS.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}</select></div>
+      <div id="q_event_date_block" style="display:none" class="form-group"><label>Event date *</label><input class="form-input" id="q_event_date" type="date"></div>
+      <div class="form-group" id="q_event_subtype_block" style="display:none"><label>Event subtype</label><select class="form-select" id="q_event_subtype"><option value="formal">Formal</option><option value="recruitment">Recruitment</option><option value="philanthropy">Philanthropy</option><option value="other">Other</option></select></div>
       </div></div>`;
   } else if (_intakeStep === 2) {
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Design Direction *</div>
-      <div class="form-group"><label>Design direction (2–3 sentences) *</label><textarea class="form-textarea" id="q_design_direction" placeholder="Describe the vibe, colors, placement..."></textarea></div>
-      <div class="form-group"><label>Required text *</label><input class="form-input" id="q_required_text" placeholder="Text that must appear"></div>
-      <div class="form-group"><label>Must-haves</label><textarea class="form-textarea" id="q_must_haves" style="min-height:60px"></textarea></div>
-      <div class="form-group"><label>Dealbreakers</label><textarea class="form-textarea" id="q_dealbreakers" style="min-height:60px"></textarea></div>
-      <div class="form-group"><label>Reference links (one per line, 2–5) *</label><textarea class="form-textarea" id="q_ref_links" placeholder="https://..."></textarea></div>
+      <div class="form-section"><div class="form-section-title">Order Specs</div>
+      <div class="form-row"><div class="form-group"><label>Garment type *</label><select class="form-select" id="q_garment"><option value="tee">T-Shirt</option><option value="hoodie">Hoodie</option><option value="crewneck">Crewneck</option><option value="tank">Tank</option><option value="longsleeve">Long Sleeve</option><option value="polo">Polo</option><option value="hat">Hat</option><option value="other">Other</option></select></div><div class="form-group"><label>Fit *</label><select class="form-select" id="q_fit"><option value="standard">Standard</option><option value="oversized">Oversized</option><option value="heavyweight">Heavyweight</option></select></div></div>
+      <div class="form-group"><label>Pocket tee? (Print pocket?)</label><select class="form-select" id="q_pocket_tee"><option value="false">No</option><option value="true">Yes</option></select></div>
+      <div class="form-group"><label>Estimated qty range *</label><div class="form-row"><input class="form-input" id="q_qty_min" type="number" min="1" placeholder="Min"><input class="form-input" id="q_qty_max" type="number" min="1" placeholder="Max"></div></div>
+      <div class="form-group"><label>Garment colors (comma-separated) *</label><input class="form-input" id="q_colors" placeholder="e.g. Navy, White"></div>
+      <div class="form-group"><label>Print locations *</label><input class="form-input" id="q_print_locations" placeholder="e.g. front, back, sleeve"></div>
+      <div class="form-group"><label>Budget range (optional)</label><select class="form-select" id="q_budget_range"><option value="">— Optional —</option><option value="under_20">Under $20</option><option value="20_25">$20–25</option><option value="25_30">$25–30</option><option value="open">Open</option></select></div>
       </div></div>`;
   } else if (_intakeStep === 3) {
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Timeline & Delivery *</div>
-      <div class="form-group"><label>Needed by date *</label><input class="form-input" id="q_needed_by" type="date" onchange="updateTimelineRisk()"></div>
+      <div class="form-section"><div class="form-section-title">Design Direction *</div>
+      <div class="form-group"><label>Design direction (2–3 sentences) *</label><textarea class="form-textarea" id="q_design_direction" placeholder="Describe the vibe, colors, placement..." oninput="updateIntakeButtons()"></textarea><span id="q_design_err" class="err" style="display:none;font-size:12px;margin-top:4px"></span></div>
+      <div class="form-group"><label>Required text *</label><input class="form-input" id="q_required_text" placeholder="Text that must appear" oninput="updateIntakeButtons()"></div>
+      <div class="form-group"><label>Reference links (one per line) OR upload images — at least one required</label><textarea class="form-textarea" id="q_ref_links" placeholder="https://..." style="min-height:60px" oninput="updateIntakeButtons()"></textarea></div>
+      <div class="form-group"><label>Upload reference images (PNG/JPG/PDF)</label><input type="file" class="form-input" id="q_ref_uploads" accept=".png,.jpg,.jpeg,.pdf" multiple onchange="onIntakeRefUpload()"><div id="q_ref_upload_list" style="font-size:12px;color:#6b7280;margin-top:6px"></div></div>
+      <div class="form-group"><label>Must-haves (optional)</label><textarea class="form-textarea" id="q_must_haves" style="min-height:60px"></textarea></div>
+      <div class="form-group"><label>Deal-breakers (optional)</label><textarea class="form-textarea" id="q_dealbreakers" style="min-height:60px"></textarea></div>
+      <button class="btn btn-green" id="btnSubmitToDesign" onclick="submitToDesignFromIntake()">Submit to Design</button>
+      <p style="font-size:12px;color:#6b7280;margin-top:12px">After submitting to design you can continue to Timeline &amp; Invoice.</p>
+      </div></div>`;
+  } else if (_intakeStep === 4) {
+    content.innerHTML = `<div class="form-card">
+      <div class="form-section"><div class="form-section-title">Timeline &amp; Delivery *</div>
+      <div class="form-group"><label>Needed by date *</label><input class="form-input" id="q_needed_by" type="date" onchange="updateTimelineRisk();updateIntakeButtons()"></div>
       <div id="timelineRiskBanner"></div>
       <div class="form-group"><label>Delivery method *</label><select class="form-select" id="q_delivery"><option value="ship">Ship</option><option value="pickup">Pickup</option><option value="vendor">Vendor</option></select></div>
       <div class="form-group"><label>Internal timeline notes</label><input class="form-input" id="q_timeline_notes" placeholder="SLA estimate etc."></div>
       </div></div>`;
   } else {
+    const pc = window._intakePrimaryContact || {};
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Invoice & Contacts *</div>
-      <div class="form-group"><label>Invoice email *</label><input class="form-input" id="q_invoice_email" type="email" placeholder="billing@chapter.org"></div>
-      <div class="form-group"><label>Primary contact name *</label><input class="form-input" id="q_contact_name" placeholder="Full name"></div>
-      <div class="form-group"><label>Primary contact phone *</label><input class="form-input" id="q_contact_phone" placeholder="Phone"></div>
+      <div class="form-section"><div class="form-section-title">Invoice &amp; Contacts *</div>
+      <div class="form-group"><label>Invoice email *</label><input class="form-input" id="q_invoice_email" type="email" placeholder="billing@chapter.org" value="${escapeHtml(pc.email || '')}" oninput="updateIntakeButtons()"></div>
+      <div class="form-group"><label>Primary contact name</label><input class="form-input" id="q_contact_name" placeholder="Full name" value="${escapeHtml(pc.name || '')}"></div>
+      <div class="form-group"><label>Primary contact phone</label><input class="form-input" id="q_contact_phone" placeholder="Phone" value="${escapeHtml(pc.phone || '')}"></div>
       </div></div>`;
   }
   const prev = _intakeStep > 0 ? `<button class="btn btn-ghost" onclick="setIntakeStep(${_intakeStep - 1})">← Back</button>` : '';
-  const next = _intakeStep < INTAKE_STEPS.length - 1 ? `<button class="btn btn-blue" onclick="setIntakeStep(${_intakeStep + 1})">Next →</button>` : '';
+  const next = _intakeStep < INTAKE_STEPS.length - 1 ? `<button class="btn btn-blue" id="btnIntakeNext" onclick="setIntakeStep(${_intakeStep + 1})">Next →</button>` : '';
   const draft = `<button class="btn btn-ghost" onclick="saveIntakeDraft()">Save Draft</button>`;
-  const submit = _intakeStep === INTAKE_STEPS.length - 1 ? `<button class="btn btn-green" id="btnSubmitToDesign" onclick="submitIntakeToDesign()">Submit to Design</button>` : '';
-  if (actions) actions.innerHTML = [prev, draft, next, submit].filter(Boolean).join(' ');
-  if (_intakeStep === 3) updateTimelineRisk();
+  const finish = _intakeStep === INTAKE_STEPS.length - 1 ? `<button class="btn btn-green" id="btnIntakeFinish" onclick="saveIntakeInvoiceAndFinish()">Save invoice & finish</button>` : '';
+  if (actions) actions.innerHTML = [prev, draft, next, finish].filter(Boolean).join(' ');
+  if (_intakeStep === 1) toggleEventDateField();
+  if (_intakeStep === 4) updateTimelineRisk();
+  setTimeout(updateIntakeButtons, 50);
+}
+
+function toggleIntakeChapterForm() {
+  const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
+  const exBl = $('q_existing_block'); const newBl = $('q_new_block');
+  if (exBl) exBl.style.display = existing ? 'block' : 'none';
+  if (newBl) newBl.style.display = existing ? 'none' : 'block';
+  updateIntakeButtons();
+}
+
+function toggleEventDateField() {
+  const ctx = $('q_order_context') && $('q_order_context').value;
+  const isEvent = ctx === 'Event';
+  const bl = $('q_event_date_block'); const sub = $('q_event_subtype_block');
+  if (bl) bl.style.display = isEvent ? 'block' : 'none';
+  if (sub) sub.style.display = isEvent ? 'block' : 'none';
+  updateIntakeButtons();
+}
+
+function filterChapterSelect() {
+  const search = (v('q_chapter_search') || '').toLowerCase();
+  const sel = $('q_chapter'); if (!sel) return;
+  const opts = sel.querySelectorAll('option');
+  opts.forEach((o, i) => { if (i === 0) return; o.style.display = !search || o.textContent.toLowerCase().includes(search) ? '' : 'none'; });
 }
 
 async function loadChapterSelect(prefillId) {
-  let q = sb.from('chapters').select('id,chapter_name,school').order('chapter_name');
-  if (CP?.role === 'sales_rep') q = q.eq('assigned_sales_rep', CU.id);
-  const { data: list } = await q;
+  const { data: list } = await sb.from('chapters').select('id,chapter_name,school').order('chapter_name');
   const sel = $('q_chapter'); if (!sel) return;
-  sel.innerHTML = '<option value="">— Select or leave blank —</option>' + (list || []).map(c => `<option value="${c.id}" ${prefillId === c.id ? 'selected' : ''}>${escapeHtml(c.chapter_name)} · ${escapeHtml(c.school || '')}</option>`).join('');
-  if (prefillId && list && list.find(c => c.id === prefillId)) { const c = list.find(x => x.id === prefillId); $('q_school').value = c.school || ''; $('q_chapter_name').value = c.chapter_name || ''; }
+  sel.innerHTML = '<option value="">— Select —</option>' + (list || []).map(c => `<option value="${c.id}" ${prefillId === c.id ? 'selected' : ''}>${escapeHtml(c.chapter_name)} · ${escapeHtml(c.school || '')}</option>`).join('');
+  if (prefillId && list && list.find(c => c.id === prefillId)) { document.getElementById('q_chapter_existing').checked = true; toggleIntakeChapterForm(); onIntakeChapterSelect(); }
+}
+
+async function onIntakeChapterSelect() {
+  const chId = $('q_chapter') && $('q_chapter').value;
+  if (!chId || !sb) return;
+  const { data: primary } = await sb.from('chapter_contacts').select('name,phone,email').eq('chapter_id', chId).eq('is_primary', true).limit(1).single();
+  window._intakePrimaryContact = primary || null;
+}
+
+async function onIntakeRefUpload() {
+  const input = $('q_ref_uploads'); if (!input || !input.files || !input.files.length || !sb) return;
+  const orderId = _intakeDraftId; if (!orderId) { showErr($('quoteMsg'), 'Save draft first to upload files.'); return; }
+  const listEl = $('q_ref_upload_list'); const msg = $('quoteMsg'); msg.style.display = 'none';
+  for (let i = 0; i < input.files.length; i++) {
+    const file = input.files[i]; const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['png','jpg','jpeg','pdf'].includes(ext)) { showErr(msg, 'Only PNG, JPG, PDF allowed.'); continue; }
+    const path = `orders/${orderId}/refs/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const { data, error } = await sb.storage.from('intake-assets').upload(path, file, { upsert: true });
+    if (error) { showErr(msg, 'Upload failed: ' + error.message); continue; }
+    const { data: urlData } = sb.storage.from('intake-assets').getPublicUrl(data.path);
+    _intakeRefUrls = _intakeRefUrls || []; _intakeRefUrls.push(urlData.publicUrl);
+  }
+  if (listEl) listEl.textContent = (_intakeRefUrls && _intakeRefUrls.length) ? _intakeRefUrls.length + ' file(s) uploaded' : '';
+  updateIntakeButtons();
+  input.value = '';
 }
 
 function updateTimelineRisk() {
@@ -876,19 +1081,24 @@ function intakePayload() {
   const needed = v('q_needed_by');
   let timelineRisk = 'low';
   if (needed) { const days = Math.ceil((new Date(needed) - new Date()) / (24 * 60 * 60 * 1000)); if (days < 14) timelineRisk = 'high'; else if (days < 21) timelineRisk = 'medium'; }
-  const chapterId = ($('q_chapter') && $('q_chapter').value) || null;
+  const chapterId = ($('q_chapter') && $('q_chapter').value) || window._intakeDraftChapterId || null;
+  const orderContext = ($('q_order_context') && $('q_order_context').value) || null;
+  const eventDate = ($('q_order_context') && $('q_order_context').value === 'Event') ? v('q_event_date') : null;
   return {
     chapter_id: chapterId || null,
     client_name: v('q_chapter_name') || v('q_school') || '—',
     organization: v('q_school'),
-    event_type: ($('q_event_type') && $('q_event_type').value) || 'general',
-    event_date: v('q_event_date') || null,
+    event_type: ($('q_event_subtype') && $('q_event_subtype').value) || 'general',
+    event_date: eventDate || v('q_event_date') || null,
+    order_context: orderContext,
+    event_subtype: ($('q_event_subtype') && $('q_event_subtype').value) || null,
+    pocket_tee: ($('q_pocket_tee') && $('q_pocket_tee').value) === 'true',
     needed_by_date: needed || null,
     timeline_date: needed,
     delivery_method: ($('q_delivery') && $('q_delivery').value) || 'ship',
     timeline_risk_level: timelineRisk,
     invoice_email: v('q_invoice_email'),
-    budget_range: ($('q_budget_range') && $('q_budget_range').value) || 'open',
+    budget_range: ($('q_budget_range') && $('q_budget_range').value) || null,
     estimated_qty_min: parseInt(v('q_qty_min'), 10) || null,
     estimated_qty_max: parseInt(v('q_qty_max'), 10) || null,
     quantity: parseInt(v('q_qty_max'), 10) || parseInt(v('q_qty_min'), 10) || null,
@@ -901,69 +1111,118 @@ function intakePayload() {
     must_haves: v('q_must_haves'),
     dealbreakers: v('q_dealbreakers'),
     reference_links: refLinks,
+    reference_images: _intakeRefUrls || [],
     internal_notes: v('q_timeline_notes'),
     created_by: CU.id,
     rep_id: CU.id,
-    assigned_sales_rep: CU.id,
+    assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null),
     status: 'intake',
   };
 }
 
-function intakeRequiredOk() {
-  const ch = v('q_school') || v('q_chapter_name');
-  const needed = v('q_needed_by');
-  const design = v('q_design_direction');
-  const refs = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-  const required = v('q_required_text');
-  const invoice = v('q_invoice_email');
-  const contact = v('q_contact_name');
-  const phone = v('q_contact_phone');
-  const qtyMin = parseInt(v('q_qty_min'), 10);
-  const qtyMax = parseInt(v('q_qty_max'), 10);
-  return !!ch && !!needed && !!design && refs.length >= 2 && refs.length <= 5 && !!required && !!invoice && !!contact && !!phone && qtyMin >= 1 && qtyMax >= qtyMin;
+async function ensureIntakeChapterAndOrder() {
+  const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
+  let chapterId = ($('q_chapter') && $('q_chapter').value) || null;
+  if (!existing) {
+    const school = v('q_school'); const chapterName = v('q_chapter_name');
+    if (!school || !chapterName) return { ok: false, error: 'School and chapter name required' };
+    const { data: ch, error: chErr } = await sb.from('chapters').insert({
+      school, chapter_name: chapterName, org_type: v('q_org_type') || null, notes: v('q_notes') || null,
+      assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null), status: 'active'
+    }).select('id').single();
+    if (chErr) return { ok: false, error: chErr.message };
+    chapterId = ch.id;
+    window._intakeDraftChapterId = ch.id;
+    const contactName = v('q_contact_name'); const contactPhone = v('q_contact_phone');
+    if (contactName || contactPhone) {
+      await sb.from('chapter_contacts').insert({ chapter_id: ch.id, name: contactName || '—', phone: contactPhone || null, email: v('q_contact_email') || null, role_title: v('q_contact_role') || null, is_primary: true });
+    }
+  }
+  let orderId = _intakeDraftId;
+  const payload = intakePayload();
+  payload.chapter_id = chapterId;
+  if (orderId) {
+    const { error } = await sb.from('orders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', orderId);
+    if (error) return { ok: false, error: error.message };
+  } else {
+    const { data: row, error } = await sb.from('orders').insert(payload).select('id,chapter_id,organization,client_name').single();
+    if (error) return { ok: false, error: error.message };
+    orderId = row.id;
+    _intakeDraftId = orderId;
+    try {
+      const { data: orderNum } = await sb.rpc('generate_order_number', { p_chapter_id: row.chapter_id, p_school: row.organization, p_chapter_name: row.client_name });
+      if (orderNum) await sb.from('orders').update({ order_number: orderNum, updated_at: new Date().toISOString() }).eq('id', orderId);
+    } catch (e) { console.warn('[order_number]', e); }
+  }
+  return { ok: true, orderId, chapterId };
 }
 
 async function saveIntakeDraft() {
   const msg = $('quoteMsg'); msg.style.display = 'none';
+  const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
+  let chapterId = ($('q_chapter') && $('q_chapter').value) || window._intakeDraftChapterId || null;
+  if (!_intakeDraftId && !existing && ($('q_school') && $('q_chapter_name'))) {
+    const school = v('q_school'); const chapterName = v('q_chapter_name');
+    if (school && chapterName) {
+      const { data: ch, error: chErr } = await sb.from('chapters').insert({
+        school, chapter_name: chapterName, org_type: v('q_org_type') || null, notes: v('q_notes') || null,
+        assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null), status: 'active'
+      }).select('id').single();
+      if (!chErr && ch) { chapterId = ch.id; window._intakeDraftChapterId = ch.id; }
+    }
+  }
   const payload = intakePayload();
+  payload.chapter_id = chapterId;
   if (_intakeDraftId) {
     const { error } = await sb.from('orders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', _intakeDraftId);
     if (error) { showErr(msg, error.message); return; }
     msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Draft updated.';
     return;
   }
-  const { data: row, error } = await sb.from('orders').insert(payload).select('id').single();
+  const { data: row, error } = await sb.from('orders').insert(payload).select('id,chapter_id,organization,client_name').single();
   if (error) { showErr(msg, error.message); return; }
   _intakeDraftId = row.id;
-  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Draft saved. Continue and submit when ready.';
+  const { data: orderNum } = await sb.rpc('generate_order_number', { p_chapter_id: row.chapter_id, p_school: row.organization, p_chapter_name: row.client_name });
+  if (orderNum) await sb.from('orders').update({ order_number: orderNum, updated_at: new Date().toISOString() }).eq('id', row.id);
+  auditLog('order_created', 'order', row.id, null);
+  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Draft saved. You can upload reference images in Design step.';
 }
 
-async function submitIntakeToDesign() {
-  const msg = $('quoteMsg'); msg.style.display = 'none';
-  if (!intakeRequiredOk()) { showErr(msg, 'Complete all required fields across steps (chapter/school, needed-by date, design direction, 2–5 ref links, required text, invoice email, contact name & phone, qty range).'); return; }
-  const payload = intakePayload();
-  payload.status = 'quote';
-  let orderId = _intakeDraftId;
-  if (orderId) {
-    const { error } = await sb.from('orders').update({ ...payload, updated_at: new Date().toISOString() }).eq('id', orderId);
-    if (error) { showErr(msg, error.message); return; }
+async function submitToDesignFromIntake() {
+  const msg = $('quoteMsg'); const errStep = $('quoteStepErrors'); msg.style.display = 'none'; if (errStep) errStep.style.display = 'none';
+  const v = intakeValidation(3);
+  if (!v.ok) { if (errStep) { errStep.textContent = 'Missing: ' + v.missing.join(', '); errStep.style.display = 'block'; } return; }
+  const result = await ensureIntakeChapterAndOrder();
+  if (!result.ok) { showErr(msg, result.error); return; }
+  const orderId = result.orderId;
+  await sb.from('orders').update({ status: 'design', updated_at: new Date().toISOString() }).eq('id', orderId);
+  const { data: existingDr } = await sb.from('design_requests').select('id').eq('order_id', orderId).limit(1).single();
+  if (existingDr) {
+    await sb.from('design_requests').update({ status: 'pending', updated_at: new Date().toISOString() }).eq('id', existingDr.id);
   } else {
-    const { data: row, error } = await sb.from('orders').insert(payload).select('id').single();
-    if (error) { showErr(msg, error.message); return; }
-    orderId = row.id;
+    await sb.from('design_requests').insert({ order_id: orderId, status: 'pending' });
   }
-  const { error: drErr } = await sb.from('design_requests').insert({ order_id: orderId, status: 'pending' });
-  if (drErr) console.error('[Intake] design_request', drErr);
-  _intakeDraftId = null;
-  msg.className = 'suc'; msg.style.cssText = 'display:block;background:#dcfce7;color:#16a34a;border-radius:8px;padding:10px 14px;font-size:13px;margin-bottom:14px';
-  msg.textContent = '✅ Submitted to design. Redirecting...';
-  setTimeout(() => go('dashboard'), 1400);
+  if (msg) { msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Submitted to design. Continue to Timeline & Invoice below.'; }
+  auditLog('order_submit_to_design', 'order', orderId, null);
+  setIntakeStep(4);
+}
+
+async function saveIntakeInvoiceAndFinish() {
+  const msg = $('quoteMsg'); msg.style.display = 'none';
+  const v = intakeValidation(5);
+  if (!v.ok) { const e = $('quoteStepErrors'); if (e) { e.textContent = 'Missing: ' + v.missing.join(', '); e.style.display = 'block'; } return; }
+  if (!_intakeDraftId) { showErr(msg, 'Complete Design step first (Submit to Design).'); return; }
+  const payload = intakePayload();
+  await sb.from('orders').update({ invoice_email: payload.invoice_email, updated_at: new Date().toISOString() }).eq('id', _intakeDraftId);
+  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Invoice contact saved.';
+  setTimeout(() => go('dashboard'), 1200);
 }
 
 // ═══════════════════ DESIGN QUEUE ═══════════════════
 async function pgDesignQueue() {
   mc('mainContent', `<div class="page">
     <div class="page-header"><h1>Design Queue</h1><p>Manage mockup creation and design workflow</p></div>
+    <div id="dqErr" class="err" style="display:none"></div>
     <div class="stat-grid" id="dqStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
     <div class="tab-bar">
       <div class="tab active" onclick="setTab(this.parentElement,this,()=>dqFilter('all'))">All</div>
@@ -974,13 +1233,25 @@ async function pgDesignQueue() {
     <div class="card-grid" id="dqCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
 
+  const dqErrEl = $('dqErr');
   const { data: orders, error: dqErr } = await sb.from('orders').select('*')
     .in('status', ['intake','quote','design','production'])
     .order('is_rush', { ascending: false })
     .order('created_at', { ascending: true });
 
-  if (dqErr) { console.error('[DesignQueue]', dqErr); const errEl = document.createElement('div'); errEl.className = 'err'; errEl.style.marginBottom = '16px'; errEl.textContent = dqErr.message; $('dqCards').innerHTML = ''; $('dqStats').parentElement.insertBefore(errEl, $('dqStats')); const se = $('dqStats'); if (se) se.innerHTML = '<div class="stat-card"><div class="stat-label">Error</div></div>'; return; }
+  if (dqErr) { if (dqErrEl) { dqErrEl.textContent = dqErr.message; dqErrEl.style.display = 'block'; } mc('dqCards', emptyState('Failed to load design queue.', null, null)); mc('dqStats', ''); return; }
   window._dqAll = orders || [];
+  const orderIds = (orders || []).map(o => o.id);
+  const { data: drList } = orderIds.length ? await sb.from('design_requests').select('*').in('order_id', orderIds) : { data: [] };
+  window._dqDrMap = {}; (drList || []).forEach(dr => { window._dqDrMap[dr.order_id] = dr; });
+  const designerIds = [...new Set((drList || []).map(dr => dr.assigned_designer).filter(Boolean))];
+  let designerMap = {};
+  if (designerIds.length && (CP?.role === 'admin' || CP?.role === 'super_admin')) {
+    const { data: users } = await sb.from('users').select('id,full_name').in('id', designerIds);
+    (users || []).forEach(u => { designerMap[u.id] = u.full_name || u.email; });
+  }
+  window._dqDesignerMap = designerMap;
+  if (!window._chapterMap) { window._chapterMap = {}; const { data: ch } = await sb.from('chapters').select('id,school,chapter_name'); (ch || []).forEach(c => window._chapterMap[c.id] = c); }
   dqRender(window._dqAll);
 
   const o = window._dqAll;
@@ -1000,27 +1271,100 @@ function dqFilter(s) {
 
 function dqRender(orders) {
   if (!orders.length) { mc('dqCards', emptyState('No orders in this stage.', null, null)); return; }
-  mc('dqCards', orders.map(o => `
-    <div class="order-card">
+  const designerMap = window._dqDesignerMap || {};
+  const drMap = window._dqDrMap || {};
+  const chMap = window._chapterMap || {};
+  mc('dqCards', orders.map(o => {
+    const dr = drMap[o.id];
+    const ch = o.chapter_id ? chMap[o.chapter_id] : null;
+    const schoolChapter = ch ? (escapeHtml(ch.school || '') + ' · ' + escapeHtml(ch.chapter_name || '')) : (escapeHtml(o.organization || '') + ' · ' + escapeHtml(o.client_name || '—'));
+    const summary = summarizeOrder(o);
+    const designerName = dr && dr.assigned_designer ? (designerMap[dr.assigned_designer] || '—') : '—';
+    const lastUpd = dr && (dr.updated_at || dr.created_at) ? timeAgo(dr.updated_at || dr.created_at) : timeAgo(o.updated_at || o.created_at);
+    return `<div class="order-card">
       <div class="card-header">
-        <h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>
+        <h3><span class="order-num">${escapeHtml(o.order_number || '—')}</span> ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>
         ${pill(o.status)}
       </div>
-      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-sub">${schoolChapter}</div>
+      <div class="notes-box" style="margin-bottom:10px"><label>Summary (auto)</label>${escapeHtml(summary)}</div>
       <div class="card-meta">
-        <div class="meta-row"><label>Garment</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
-        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
-        <div class="meta-row"><label>Method</label><span>${escapeHtml(o.print_method || '—')}</span></div>
-        <div class="meta-row"><label>Due</label><span>${escapeHtml(fmtDate(o.timeline_date))}</span></div>
+        <div class="meta-row"><label>Design status</label><span>${escapeHtml((dr && dr.status) || 'pending')}</span></div>
+        <div class="meta-row"><label>Assigned designer</label><span>${escapeHtml(designerName)}</span></div>
+        <div class="meta-row"><label>Last update</label><span>${lastUpd}</span></div>
       </div>
-      ${o.design_notes ? `<div class="notes-box"><label>Brief</label>${escapeHtml(o.design_notes)}</div>` : ''}
-      <div class="btn-row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="openOrder('${o.id}')">View Details</button>
-        <button class="btn btn-blue btn-full btn-sm" onclick="dqAdvance('${o.id}','${o.status}')">
-          ${o.status === 'intake' || o.status === 'quote' ? '▶ Start Design' : o.status === 'design' ? '→ To Production' : '→ To Fulfillment'}
-        </button>
+      <div class="btn-row" style="flex-wrap:wrap;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="openOrder('${o.id}')">View order</button>
+        ${(CP?.role === 'admin' || CP?.role === 'super_admin' || CP?.role === 'sales_rep') ? `<button class="btn btn-ghost btn-sm" onclick="dqAssignDesigner('${o.id}')">Assign designer</button>` : ''}
+        ${(CP?.role === 'admin' || CP?.role === 'super_admin' || CP?.role === 'designer' || (dr && dr.assigned_designer === CU.id)) ? `<button class="btn btn-ghost btn-sm" onclick="dqDesignerActions('${o.id}')">Status / Notes / Upload</button>` : ''}
+        <button class="btn btn-blue btn-sm" onclick="dqAdvance('${o.id}','${o.status}')">${o.status === 'intake' || o.status === 'quote' ? '▶ Start Design' : o.status === 'design' ? '→ To Production' : '→ Fulfillment'}</button>
       </div>
-    </div>`).join(''));
+    </div>`;
+  }).join(''));
+}
+
+async function dqAssignDesigner(orderId) {
+  const { data: users } = await sb.from('users').select('id,full_name').in('role', ['designer','admin','super_admin']);
+  const dr = window._dqDrMap && window._dqDrMap[orderId];
+  const opts = (users || []).map(u => `<option value="${u.id}" ${dr && dr.assigned_designer === u.id ? 'selected' : ''}>${escapeHtml(u.full_name || u.email)}</option>`).join('');
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'dqAssignModal';
+  modal.innerHTML = `<div class="modal"><div class="modal-header"><h2>Assign designer</h2><button class="modal-close" onclick="$('dqAssignModal').remove()">×</button></div>
+  <div class="form-group"><label>Designer</label><select class="form-select" id="dq_designer_id">${opts}</select></div>
+  <button class="btn btn-blue btn-full" onclick="dqSaveAssign('${orderId}')">Save</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function dqSaveAssign(orderId) {
+  const designerId = ($('dq_designer_id') && $('dq_designer_id').value) || null;
+  const dr = window._dqDrMap && window._dqDrMap[orderId];
+  if (dr) {
+    await sb.from('design_requests').update({ assigned_designer: designerId, updated_at: new Date().toISOString() }).eq('id', dr.id);
+  } else {
+    await sb.from('design_requests').insert({ order_id: orderId, assigned_designer: designerId, status: 'pending' });
+  }
+  auditLog('design_assign', 'order', orderId, { assigned_designer: designerId });
+  $('dqAssignModal')?.remove();
+  pgDesignQueue();
+}
+
+function dqDesignerActions(orderId) {
+  const dr = window._dqDrMap && window._dqDrMap[orderId];
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'dqActionsModal';
+  modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Design: ${orderId.slice(0,8)}…</h2><button class="modal-close" onclick="$('dqActionsModal').remove()">×</button></div>
+  <div id="dqActMsg" class="err" style="display:none"></div>
+  <div class="form-group"><label>Status</label><select class="form-select" id="dq_dr_status"><option value="pending">Pending</option><option value="in_progress">In progress</option><option value="review">Review</option><option value="approved">Approved</option></select></div>
+  <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="dq_dr_notes" style="min-height:70px">${escapeHtml((dr && dr.notes) || (dr && dr.revision_notes) || '')}</textarea></div>
+  <div class="form-group"><label>Upload design file (AI/EPS/PDF/PNG/JPG)</label><input type="file" class="form-input" id="dq_dr_file" accept=".ai,.eps,.pdf,.png,.jpg,.jpeg"></div>
+  <button class="btn btn-blue btn-full" onclick="dqSaveDesignerActions('${orderId}')">Save</button></div>`;
+  document.body.appendChild(modal);
+  const st = $('dq_dr_status'); if (st && dr && dr.status) st.value = dr.status;
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function dqSaveDesignerActions(orderId) {
+  const msg = $('dqActMsg'); msg.style.display = 'none';
+  const dr = window._dqDrMap && window._dqDrMap[orderId];
+  const status = ($('dq_dr_status') && $('dq_dr_status').value) || 'pending';
+  const notes = v('dq_dr_notes');
+  const fileInput = $('dq_dr_file');
+  let mockupLinks = (dr && dr.mockup_links && Array.isArray(dr.mockup_links)) ? [...dr.mockup_links] : [];
+  if (fileInput && fileInput.files && fileInput.files[0]) {
+    const file = fileInput.files[0]; const path = `orders/${orderId}/design/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const { data, error } = await sb.storage.from('design-files').upload(path, file, { upsert: true });
+    if (error) { showErr(msg, 'Upload failed: ' + error.message); return; }
+    const { data: urlData } = sb.storage.from('design-files').getPublicUrl(data.path);
+    mockupLinks.push(urlData.publicUrl);
+  }
+  const payload = { status, notes: notes || null, revision_notes: notes || null, mockup_links: mockupLinks, updated_at: new Date().toISOString() };
+  if (dr) {
+    await sb.from('design_requests').update(payload).eq('id', dr.id);
+  } else {
+    await sb.from('design_requests').insert({ order_id: orderId, ...payload });
+  }
+  auditLog('design_update', 'order', orderId, { status });
+  $('dqActionsModal')?.remove();
+  pgDesignQueue();
 }
 
 async function dqAdvance(id, status) {
@@ -1030,42 +1374,76 @@ async function dqAdvance(id, status) {
 }
 
 // ═══════════════════ APPROVALS ═══════════════════
+let _apTab = 'design';
+
 async function pgApprovals() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>Approvals</h1><p>Review completed designs and approve for production</p></div>
+    <div class="page-header"><h1>Approvals</h1><p>Design mockups and quotes awaiting approval</p></div>
+    <div id="apErr" class="err" style="display:none"></div>
+    <div class="tab-bar" id="apTabBar">
+      <div class="tab active" id="apTabDesign" onclick="setTab('apTabBar',document.getElementById('apTabDesign'),apShowDesign)">Design Approvals</div>
+      <div class="tab" id="apTabQuote" onclick="setTab('apTabBar',document.getElementById('apTabQuote'),apShowQuote)">Quote Approvals</div>
+    </div>
     <div class="stat-grid" id="apStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
     <div class="card-grid" id="apCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
+  _apTab = 'design';
+  apShowDesign();
+}
 
-  const { data: orders, error: apErr } = await sb.from('orders').select('*')
-    .in('status', ['design','production'])
-    .order('created_at', { ascending: false });
-
-  if (apErr) { console.error('[Approvals]', apErr); mc('apStats', ''); mc('apCards', '<div class="err">' + apErr.message + '</div>'); return; }
+async function apShowDesign() {
+  _apTab = 'design';
+  document.querySelectorAll('#apTabs').forEach(e => e.id && e.querySelector('.tab') && e.querySelector('.tab').classList.remove('active'));
+  const el = $('apTabDesign'); if (el) el.classList.add('active'); const q = $('apTabQuote'); if (q) q.classList.remove('active');
+  const { data: orders, error } = await sb.from('orders').select('*').eq('status', 'design').order('created_at', { ascending: false });
+  if (error) { if ($('apErr')) { $('apErr').textContent = error.message; $('apErr').style.display = 'block'; } mc('apCards', emptyState('Failed to load.', null, null)); mc('apStats', ''); return; }
   const list = orders || [];
-  const apStatsEl = $('apStats'); if (apStatsEl) apStatsEl.innerHTML = `
-    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.status === 'design').length}</div><div class="stat-label">Awaiting Approval</div></div></div>
-    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.status === 'production').length}</div><div class="stat-label">Approved</div></div></div>
-    <div class="stat-card"><div><div class="stat-num">${list.filter(o => o.is_rush).length}</div><div class="stat-label">Rush</div></div></div>
-    <div class="stat-card"><div><div class="stat-num">${list.length}</div><div class="stat-label">Total</div></div></div>`;
-
-  if (!list.length) { mc('apCards', emptyState('No items pending approval.', null, null)); return; }
+  if ($('apStats')) $('apStats').innerHTML = `<div class="stat-card"><div class="stat-num">${list.length}</div><div class="stat-label">Design mockups awaiting approval</div></div>`;
+  if (!list.length) { mc('apCards', emptyState('No design mockups awaiting approval.', null, null)); return; }
   mc('apCards', list.map(o => `
     <div class="order-card">
-      <div class="card-header"><h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
-      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-header"><h3><span class="order-num">${escapeHtml(o.order_number || '—')}</span> ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
+      <div class="card-sub">${escapeHtml(o.client_name || o.organization || '—')}</div>
       <div class="card-meta">
         <div class="meta-row"><label>Product</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
         <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
-        <div class="meta-row"><label>Method</label><span>${escapeHtml(o.print_method || '—')}</span></div>
         <div class="meta-row"><label>Order #</label><span class="order-num">${escapeHtml(o.order_number || '—')}</span></div>
       </div>
-      ${o.design_notes ? `<div class="notes-box"><label>Design Notes</label>${escapeHtml(o.design_notes)}</div>` : ''}
+      ${o.design_direction ? `<div class="notes-box"><label>Design</label>${escapeHtml((o.design_direction || '').slice(0,120))}…</div>` : ''}
       <div class="btn-row">
         <button class="btn btn-ghost btn-full btn-sm" onclick="apRevision('${o.id}')">↩ Request Revision</button>
-        <button class="btn btn-green btn-full btn-sm" onclick="apApprove('${o.id}')">✓ Approve</button>
+        <button class="btn btn-green btn-full btn-sm" onclick="apApprove('${o.id}')">✓ Approve design</button>
       </div>
     </div>`).join(''));
+}
+
+async function apShowQuote() {
+  _apTab = 'quote';
+  const el = $('apTabQuote'); if (el) el.classList.add('active'); const d = $('apTabDesign'); if (d) d.classList.remove('active');
+  const { data: orders, error } = await sb.from('orders').select('*').eq('status', 'quote').order('created_at', { ascending: false });
+  if (error) { if ($('apErr')) { $('apErr').textContent = error.message; $('apErr').style.display = 'block'; } mc('apCards', emptyState('Failed to load.', null, null)); mc('apStats', ''); return; }
+  const list = orders || [];
+  if ($('apStats')) $('apStats').innerHTML = `<div class="stat-card"><div class="stat-num">${list.length}</div><div class="stat-label">Quotes ready for approval</div></div>`;
+  if (!list.length) { mc('apCards', emptyState('No quotes awaiting approval.', null, null)); return; }
+  mc('apCards', list.map(o => `
+    <div class="order-card">
+      <div class="card-header"><h3><span class="order-num">${escapeHtml(o.order_number || '—')}</span> ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
+      <div class="card-sub">${escapeHtml(o.client_name || o.organization || '—')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Product</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
+        <div class="meta-row"><label>Quote total</label><span>${o.quote_total != null ? '$' + Number(o.quote_total).toLocaleString() : '—'}</span></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-full btn-sm" onclick="openOrder('${o.id}')">View details</button>
+        <button class="btn btn-green btn-full btn-sm" onclick="apQuoteApprove('${o.id}')">✓ Approve quote</button>
+      </div>
+    </div>`).join(''));
+}
+
+async function apQuoteApprove(id) {
+  const ok = await updateStatus(id, 'design');
+  if (ok) apShowQuote();
 }
 
 async function apApprove(id) {
@@ -1078,67 +1456,126 @@ async function apRevision(id) {
 }
 
 // ═══════════════════ FULFILLMENT ═══════════════════
+const FULFILLMENT_CHECKLIST_KEYS = ['payment_confirmed','po_created','art_sent','proof_received','in_production','shipped','delivered'];
+
 async function pgFulfillment() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>Fulfillment</h1><p>Track production and shipping status</p></div>
-    <div class="stat-grid" id="ffStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
-    <div class="tab-bar">
-      <div class="tab active" onclick="setTab(this.parentElement,this,()=>ffFilter('active'))">Active</div>
-      <div class="tab" onclick="setTab(this.parentElement,this,()=>ffFilter('complete'))">Completed</div>
-      <div class="tab" onclick="setTab(this.parentElement,this,()=>ffFilter('all'))">All</div>
+    <div class="page-header"><h1>Fulfillment</h1><p>Quote requests and production tracking</p></div>
+    <div id="ffErr" class="err" style="display:none"></div>
+    <div class="tab-bar" id="ffTabBar">
+      <div class="tab active" onclick="setTab('ffTabBar',this,ffShowQuoteRequests)">Quote Requests</div>
+      <div class="tab" onclick="setTab('ffTabBar',this,ffShowProduction)">Production</div>
     </div>
+    <div class="stat-grid" id="ffStats"></div>
     <div class="card-grid" id="ffCards"><div style="padding:20px"><div class="spinner-sm"></div></div></div>
   </div>`);
-
-  const { data: orders, error: ffErr } = await sb.from('orders').select('*')
-    .in('status', ['production','fulfillment','complete'])
-    .order('created_at', { ascending: false });
-
-  if (ffErr) { console.error('[Fulfillment]', ffErr); const fe = $('ffStats'); const fc = $('ffCards'); if (fe) fe.innerHTML = '<div class="stat-card"><div class="stat-label">Error</div></div>'; if (fc) fc.innerHTML = '<div class="err">' + ffErr.message + '</div>'; return; }
-  window._ffAll = orders || [];
-  ffRender(window._ffAll.filter(o => o.status !== 'complete'));
-
-  const o = window._ffAll;
-  const ffStatsEl = $('ffStats'); if (ffStatsEl) ffStatsEl.innerHTML = `
-    <div class="stat-card"><div class="stat-bar" style="background:#d97706"></div><div><div class="stat-num">${o.filter(x => x.status === 'production').length}</div><div class="stat-label">In Production</div></div></div>
-    <div class="stat-card"><div class="stat-bar" style="background:#0f75bc"></div><div><div class="stat-num">${o.filter(x => x.status === 'fulfillment').length}</div><div class="stat-label">Ready to Ship</div></div></div>
-    <div class="stat-card"><div class="stat-bar" style="background:#16a34a"></div><div><div class="stat-num">${o.filter(x => x.status === 'complete').length}</div><div class="stat-label">Delivered</div></div></div>
-    <div class="stat-card"><div class="stat-bar" style="background:#6b7280"></div><div><div class="stat-num">${o.length}</div><div class="stat-label">Total</div></div></div>`;
+  ffShowQuoteRequests();
 }
 
-function ffFilter(f) {
-  const o = window._ffAll || [];
-  const filtered = f === 'active' ? o.filter(x => x.status !== 'complete')
-    : f === 'complete' ? o.filter(x => x.status === 'complete') : o;
-  ffRender(filtered);
-}
-
-function ffRender(orders) {
-  if (!orders.length) { mc('ffCards', emptyState('No orders in this stage.', null, null)); return; }
-  mc('ffCards', orders.map(o => `
+async function ffShowQuoteRequests() {
+  const { data: orders, error } = await sb.from('orders').select('*').in('status', ['intake','quote']).order('created_at', { ascending: false });
+  if (error) { if ($('ffErr')) { $('ffErr').textContent = error.message; $('ffErr').style.display = 'block'; } mc('ffCards', emptyState('Failed to load.', null, null)); return; }
+  const list = orders || [];
+  if ($('ffStats')) $('ffStats').innerHTML = `<div class="stat-card"><div class="stat-num">${list.length}</div><div class="stat-label">Orders needing quote</div></div>`;
+  if (!list.length) { mc('ffCards', emptyState('No quote requests.', null, null)); return; }
+  mc('ffCards', list.map(o => `
     <div class="order-card">
-      <div class="card-header"><h3>${escapeHtml(o.client_name)} ${o.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(o.status)}</div>
-      <div class="card-sub">${escapeHtml(o.event_name || o.organization || '—')}</div>
+      <div class="card-header"><h3><span class="order-num">${escapeHtml(o.order_number || '—')}</span></h3>${pill(o.status)}</div>
+      <div class="card-sub">${escapeHtml(o.client_name || o.organization || '—')}</div>
       <div class="card-meta">
-        <div class="meta-row"><label>Product</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
-        <div class="meta-row"><label>Quantity</label><span>${o.quantity ?? '—'} units</span></div>
-        <div class="meta-row"><label>Fulfillment</label><span>${escapeHtml(o.fulfillment_type || 'bulk')}</span></div>
-        <div class="meta-row"><label>Order #</label><span class="order-num">${escapeHtml(o.order_number || '—')}</span></div>
+        <div class="meta-row"><label>Garment</label><span>${escapeHtml(o.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Qty</label><span>${o.quantity ?? o.estimated_qty_max ?? '—'}</span></div>
+        <div class="meta-row"><label>Needed by</label><span>${escapeHtml(fmtDate(o.needed_by_date))}</span></div>
       </div>
-      ${o.is_rush ? `<div style="background:#fff8f0;border:1px solid #fed7aa;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400e;margin-bottom:12px">⚡ Rush – expedited shipping required</div>` : ''}
-      ${o.status !== 'complete' ? `<div class="btn-row">
-        <button class="btn btn-ghost btn-full btn-sm" onclick="openOrder('${o.id}')">View Details</button>
-        <button class="btn btn-blue btn-full btn-sm" onclick="ffAdvance('${o.id}','${o.status}')">
-          ${o.status === 'production' ? '→ Mark Ready to Ship' : '✓ Mark Delivered'}
-        </button>
-      </div>` : `<div style="text-align:center;color:#16a34a;font-size:13px;font-weight:600;padding:4px">✓ Delivered ${fmtDate(o.updated_at)}</div>`}
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-sm" onclick="openOrder('${o.id}')">View</button>
+        <button class="btn btn-blue btn-sm" onclick="ffOpenQuoteForm('${o.id}')">Enter quote / Send to approval</button>
+      </div>
     </div>`).join(''));
+}
+
+function ffOpenQuoteForm(orderId) {
+  sb.from('orders').select('*').eq('id', orderId).single().then(({ data: o }) => {
+    if (!o) return;
+    const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'ffQuoteModal';
+    modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Quote: ${escapeHtml(o.order_number || '—')}</h2><button class="modal-close" onclick="$('ffQuoteModal').remove()">×</button></div>
+    <div id="ffQuoteMsg" class="err" style="display:none"></div>
+    <div class="form-group"><label>Vendor / production partner</label><input class="form-input" id="ff_vendor" value="${escapeHtml(o.production_partner || '')}"></div>
+    <div class="form-group"><label>Quote total ($)</label><input class="form-input" id="ff_quote_total" type="number" step="0.01" value="${o.quote_total ?? ''}"></div>
+    <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="ff_quote_notes" style="min-height:60px">${escapeHtml(o.internal_notes || '')}</textarea></div>
+    <button class="btn btn-blue btn-full" onclick="ffSendQuoteToApproval('${orderId}')">Send quote to approval</button></div>`;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  });
+}
+
+async function ffSendQuoteToApproval(orderId) {
+  const msg = $('ffQuoteMsg'); const total = parseFloat(v('ff_quote_total'));
+  if (isNaN(total) || total < 0) { showErr(msg, 'Enter a valid quote total'); return; }
+  const { error } = await sb.from('orders').update({
+    quote_total: total, production_partner: v('ff_vendor') || null, internal_notes: v('ff_quote_notes') || null,
+    status: 'quote', quote_status: 'pending_approval', updated_at: new Date().toISOString()
+  }).eq('id', orderId);
+  if (error) { showErr(msg, error.message); return; }
+  $('ffQuoteModal')?.remove();
+  ffShowQuoteRequests();
+}
+
+async function ffShowProduction() {
+  const { data: orders, error } = await sb.from('orders').select('*').in('status', ['production','fulfillment','complete']).order('created_at', { ascending: false });
+  if (error) { if ($('ffErr')) { $('ffErr').textContent = error.message; $('ffErr').style.display = 'block'; } mc('ffCards', emptyState('Failed to load.', null, null)); return; }
+  window._ffProduction = orders || [];
+  const o = window._ffProduction;
+  if ($('ffStats')) $('ffStats').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${o.filter(x => x.status === 'production').length}</div><div class="stat-label">In production</div></div>
+    <div class="stat-card"><div class="stat-num">${o.filter(x => x.status === 'fulfillment').length}</div><div class="stat-label">Ready to ship</div></div>
+    <div class="stat-card"><div class="stat-num">${o.filter(x => x.status === 'complete').length}</div><div class="stat-label">Delivered</div></div>`;
+  if (!o.length) { mc('ffCards', emptyState('No production orders.', null, null)); return; }
+  mc('ffCards', o.map(ord => {
+    const check = (ord.fulfillment_checklist && typeof ord.fulfillment_checklist === 'object') ? ord.fulfillment_checklist : {};
+    return `<div class="order-card">
+      <div class="card-header"><h3><span class="order-num">${escapeHtml(ord.order_number || '—')}</span> ${ord.is_rush ? '<span class="pill pill-rush">RUSH</span>' : ''}</h3>${pill(ord.status)}</div>
+      <div class="card-sub">${escapeHtml(ord.client_name || ord.organization || '—')}</div>
+      <div class="card-meta">
+        <div class="meta-row"><label>Product</label><span>${escapeHtml(ord.garment_type || '—')}</span></div>
+        <div class="meta-row"><label>Quantity</label><span>${ord.quantity ?? '—'}</span></div>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:10px">Checklist: ${FULFILLMENT_CHECKLIST_KEYS.map(k => check[k] ? '✓ ' + k.replace('_',' ') : '○ ' + k.replace('_',' ')).join(' · ')}</div>
+      ${ord.status !== 'complete' ? `<div class="btn-row">
+        <button class="btn btn-ghost btn-sm" onclick="openOrder('${ord.id}')">View</button>
+        <button class="btn btn-ghost btn-sm" onclick="ffOpenChecklist('${ord.id}')">Update checklist</button>
+        <button class="btn btn-blue btn-sm" onclick="ffAdvance('${ord.id}','${ord.status}')">${ord.status === 'production' ? '→ Ready to ship' : '✓ Mark delivered'}</button>
+      </div>` : `<div style="text-align:center;color:#16a34a;font-size:13px">✓ Delivered</div>`}
+    </div>`;
+  }).join(''));
+}
+
+function ffOpenChecklist(orderId) {
+  const o = (window._ffProduction || []).find(x => x.id === orderId); if (!o) return;
+  const check = (o.fulfillment_checklist && typeof o.fulfillment_checklist === 'object') ? o.fulfillment_checklist : {};
+  const labels = { payment_confirmed:'Payment confirmed', po_created:'PO created', art_sent:'Art files sent', proof_received:'Proof received', in_production:'In production', shipped:'Shipped', delivered:'Delivered' };
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'ffChecklistModal';
+  modal.innerHTML = `<div class="modal" style="max-width:420px"><div class="modal-header"><h2>Checklist: ${escapeHtml(o.order_number || '—')}</h2><button class="modal-close" onclick="$('ffChecklistModal').remove()">×</button></div>
+  <div id="ffCheckMsg" class="err" style="display:none"></div>
+  ${FULFILLMENT_CHECKLIST_KEYS.map(k => `<div class="form-group" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="ff_c_${k}" ${check[k] ? 'checked' : ''}><label for="ff_c_${k}" style="margin:0">${labels[k] || k}</label></div>`).join('')}
+  <button class="btn btn-blue btn-full" onclick="ffSaveChecklist('${orderId}')">Save</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+}
+
+async function ffSaveChecklist(orderId) {
+  const check = {};
+  FULFILLMENT_CHECKLIST_KEYS.forEach(k => { const el = $('ff_c_' + k); if (el && el.checked) check[k] = new Date().toISOString(); });
+  const { error } = await sb.from('orders').update({ fulfillment_checklist: check, updated_at: new Date().toISOString() }).eq('id', orderId);
+  if (error) { showErr($('ffCheckMsg'), error.message); return; }
+  $('ffChecklistModal')?.remove();
+  ffShowProduction();
 }
 
 async function ffAdvance(id, status) {
   const next = { production: 'fulfillment', fulfillment: 'complete' };
   const ok = await updateStatus(id, next[status]);
-  if (ok) pgFulfillment();
+  if (ok) ffShowProduction();
 }
 
 // ═══════════════════ STOREFRONT ═══════════════════
@@ -1487,6 +1924,7 @@ async function createMember() {
 
   if (data.user) {
     await sb.from('users').upsert({ id: data.user.id, email, full_name: name, role });
+    auditLog('user_created', 'user', data.user.id, { email, role });
   }
 
   if (btn) { btn.disabled = false; btn.textContent = 'Create Account'; }
@@ -1504,12 +1942,12 @@ async function updateRole(userId, newRole) {
   if (error) alert('Error updating role: ' + error.message);
 }
 
-function openEditMember(userId) {
+async function openEditMember(userId) {
   const u = (window._teamMembers || []).find(x => x.id === userId); if (!u) return;
   const perms = (u.permissions && typeof u.permissions === 'object') ? JSON.stringify(u.permissions, null, 2) : '{}';
   const st = u._stats || {};
   const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'editMemberModal';
-  modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Edit member</h2><button class="modal-close" onclick="$('editMemberModal').remove()">×</button></div>
+  modal.innerHTML = `<div class="modal" style="max-width:520px;max-height:90vh;overflow-y:auto"><div class="modal-header"><h2>Edit member</h2><button class="modal-close" onclick="$('editMemberModal').remove()">×</button></div>
   <div id="emMsg" class="err" style="display:none"></div>
   <p style="font-weight:600;margin-bottom:8px">${escapeHtml(u.full_name || u.email)}</p>
   <div class="form-group"><label>Role</label><select class="form-select" id="em_role"><option value="sales_rep">Sales Rep</option><option value="designer">Designer</option><option value="fulfillment">Fulfillment</option><option value="admin">Admin</option><option value="super_admin">Super Admin</option></select></div>
@@ -1517,10 +1955,16 @@ function openEditMember(userId) {
   <div class="form-section-title">Stats</div>
   <div class="form-row"><div class="form-group"><label>Orders count</label><input class="form-input" id="em_orders_count" type="number" value="${st.orders_count ?? 0}"></div><div class="form-group"><label>Revenue</label><input class="form-input" id="em_revenue" type="number" step="0.01" value="${st.revenue ?? 0}"></div></div>
   <div class="form-group"><label>Design count</label><input class="form-input" id="em_design_count" type="number" value="${st.design_count ?? 0}"></div>
+  <div class="form-section-title" style="margin-top:16px">Activity (last 50)</div>
+  <div id="emActivity" style="max-height:200px;overflow-y:auto;font-size:12px;color:#6b7280"><div class="spinner-sm"></div></div>
   <button class="btn btn-blue btn-full" onclick="saveEditMember('${userId}')">Save</button></div>`;
   document.body.appendChild(modal);
   const roleEl = $('em_role'); if (roleEl && u.role) roleEl.value = u.role;
   modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  const actEl = $('emActivity'); if (actEl) {
+    const { data: logs } = await sb.from('audit_log').select('action,entity_type,entity_id,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(50);
+    actEl.innerHTML = (logs && logs.length) ? logs.map(l => `<div style="padding:6px 0;border-bottom:1px solid #f3f4f6">${escapeHtml(l.action)} · ${l.entity_type || ''} · ${timeAgo(l.created_at)}</div>`).join('') : '<p style="color:#9ca3af">No activity yet.</p>';
+  }
 }
 
 async function saveEditMember(userId) {
