@@ -275,7 +275,7 @@ const NAV_ROLES = {
 
 const NAV_DEFS = {
   dashboard:      { label:'Dashboard',     icon:'<path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>' },
-  'quote-request':{ label:'New Quote',     icon:'<path d="M12 4v16m8-8H4"/>' },
+  'quote-request':{ label:'New Order',     icon:'<path d="M12 4v16m8-8H4"/>' },
   chapters:       { label:'Chapters',      icon:'<path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M17 16h2m-2 0h-5m-9 0H3"/>' },
   'design-queue': { label:'Design Queue',  icon:'<path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>' },
   approvals:      { label:'Approvals',     icon:'<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>' },
@@ -543,7 +543,7 @@ async function pgDashboard() {
     <div id="dErr" class="err" style="display:none"></div>
     <div class="stat-grid" id="dStats"><div class="stat-card"><div class="spinner-sm"></div></div></div>
     <div class="quick-grid">
-      <div class="quick-card" onclick="go('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Quote</strong><span>Start intake</span></div></div>
+      <div class="quick-card" onclick="go('quote-request')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#0f75bc" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div><div class="quick-info"><strong>New Order</strong><span>Start intake</span></div></div>
       <div class="quick-card" onclick="go('chapters')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#2563eb" stroke-width="2"><path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M17 16h2m-2 0h-5m-9 0H3"/></svg></div><div class="quick-info"><strong>Chapters</strong><span>CRM</span></div></div>
       <div class="quick-card" onclick="go('design-queue')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg></div><div class="quick-info"><strong>Design Queue</strong><span>Active designs</span></div></div>
       <div class="quick-card" onclick="go('approvals')"><div class="quick-icon"><svg fill="none" viewBox="0 0 24 24" stroke="#16a34a" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div><div class="quick-info"><strong>Approvals</strong><span>Pending review</span></div></div>
@@ -654,7 +654,10 @@ async function cancelOrder(id) {
 // ═══════════════════ CHAPTERS ═══════════════════
 async function pgChapters() {
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>Chapters</h1><p>Manage chapter profiles, contacts, and orders</p></div>
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+      <div><h1>Chapters</h1><p>Manage chapter profiles, contacts, and orders</p></div>
+      ${(CP?.role === 'admin' || CP?.role === 'super_admin') ? `<button class="btn btn-blue" onclick="openAddChapter()">+ Add Chapter</button>` : ''}
+    </div>
     <div id="chErr" class="err" style="display:none"></div>
     <div class="form-group" style="max-width:320px;margin-bottom:16px">
       <input type="text" class="form-input" id="chSearch" placeholder="Search by school or chapter name..." oninput="chSearchDebounce()">
@@ -743,7 +746,7 @@ async function openChapterDetail(chapterId) {
   <div class="section-card">
     <div class="section-title">Orders</div>
     <div id="chOrders"><div class="spinner-sm"></div></div>
-    ${canEdit ? `<button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="goToQuoteWithChapter('${chapterId}')">Create New Quote for this Chapter</button>` : ''}
+    ${canEdit ? `<button class="btn btn-blue btn-sm" style="margin-top:8px" onclick="goToQuoteWithChapter('${chapterId}')">Create New Order for this Chapter</button>` : ''}
   </div></div>`;
   await loadChapterContacts(chapterId);
   await loadChapterOrders(chapterId);
@@ -770,6 +773,43 @@ function openEditChapter(chapterId) {
       sel.innerHTML = '<option value="">— None —</option>' + (users || []).map(u => `<option value="${u.id}" ${u.id === c.assigned_sales_rep ? 'selected' : ''}>${escapeHtml(u.full_name || u.email || u.id)}</option>`).join('');
     });
   } else { const w = $('ecAssignWrap'); if (w) w.style.display = 'none'; }
+}
+
+function openAddChapter() {
+  const modal = document.createElement('div'); modal.className = 'modal-bg open'; modal.id = 'addChapterModal';
+  modal.innerHTML = `<div class="modal" style="max-width:480px"><div class="modal-header"><h2>Add Chapter</h2><button class="modal-close" onclick="$('addChapterModal').remove()">×</button></div>
+  <div id="acNewMsg" class="err" style="display:none"></div>
+  <div class="form-group"><label>School *</label><input class="form-input" id="ac_new_school" placeholder="e.g. Ohio State"></div>
+  <div class="form-group"><label>Chapter name *</label><input class="form-input" id="ac_new_chapter_name" placeholder="e.g. Alpha Phi"></div>
+  <div class="form-row"><div class="form-group"><label>Org type</label><input class="form-input" id="ac_new_org_type" placeholder="Fraternity / Sorority"></div><div class="form-group"><label>National org</label><input class="form-input" id="ac_new_national_org"></div></div>
+  <div class="form-group"><label>Campus</label><input class="form-input" id="ac_new_campus"></div>
+  <div class="form-group"><label>Notes</label><textarea class="form-textarea" id="ac_new_notes" style="min-height:60px"></textarea></div>
+  <div class="form-group" id="acNewAssignWrap"><label>Assigned sales rep</label><select class="form-select" id="ac_new_assigned_sales_rep"><option value="">— None —</option></select></div>
+  <button class="btn btn-blue btn-full" onclick="saveNewChapter()">Create Chapter</button></div>`;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  if (CP?.role === 'admin' || CP?.role === 'super_admin') {
+    sb.from('users').select('id,full_name').in('role', ['sales_rep', 'admin', 'super_admin']).then(({ data: users }) => {
+      const sel = $('ac_new_assigned_sales_rep'); if (!sel) return;
+      sel.innerHTML = '<option value="">— None —</option>' + (users || []).map(u => `<option value="${u.id}">${escapeHtml(u.full_name || u.email || u.id)}</option>`).join('');
+    });
+  } else { const w = $('acNewAssignWrap'); if (w) w.style.display = 'none'; }
+}
+
+async function saveNewChapter() {
+  const msg = $('acNewMsg'); const school = v('ac_new_school'); const chapterName = v('ac_new_chapter_name');
+  if (!school || !chapterName) { showErr(msg, 'School and chapter name required'); return; }
+  const assigned = ($('ac_new_assigned_sales_rep') && $('ac_new_assigned_sales_rep').value) || null;
+  const { data: ch, error } = await sb.from('chapters').insert({
+    school, chapter_name: chapterName, org_type: v('ac_new_org_type') || null, national_org: v('ac_new_national_org') || null,
+    campus: v('ac_new_campus') || null, notes: v('ac_new_notes') || null, assigned_sales_rep: assigned || null, status: 'active'
+  }).select('*').single();
+  if (error) { showErr(msg, error.message); return; }
+  auditLog('chapter_created', 'chapter', ch.id, null);
+  $('addChapterModal')?.remove();
+  window._chaptersList = (window._chaptersList || []).concat([ch]);
+  if (window._chapterMap) window._chapterMap[ch.id] = ch;
+  chFilterList();
 }
 
 async function saveEditChapter(chapterId) {
@@ -854,16 +894,22 @@ const INTAKE_STEP_LABELS = ['Chapter','Order Type','Specs','Design Direction','T
 let _intakeStep = 0;
 let _intakeDraftId = null;
 let _intakeRefUrls = []; // reference image URLs after upload
+let _intakeClientRefUrls = [];
+let _intakeRepRefUrls = [];
+let _intakeState = {};
+const INTAKE_FIELD_IDS = { 0: ['q_school','q_chapter_name','q_org_type','q_notes','q_contact_name','q_contact_phone','q_contact_email','q_contact_role','q_chapter','q_chapter_existing'], 1: ['q_order_context','q_event_date'], 2: ['q_garment_code','q_garment','q_fit','q_pocket_tee','q_qty_min','q_qty_max','q_colors','q_print_locations','q_budget_range'], 3: ['q_design_direction','q_required_text','q_ref_client_links','q_ref_rep_links','q_must_haves','q_dealbreakers'], 4: ['q_needed_by','q_delivery','q_timeline_notes','q_ship_zip','q_ship_address'], 5: ['q_invoice_email','q_invoice_contact_name','q_invoice_contact_phone','q_price_per_shirt','q_size_breakdown'] };
+function syncIntakeStateFromDom() { const ids = INTAKE_FIELD_IDS[_intakeStep]; if (!ids) return; ids.forEach(id => { const el = document.getElementById(id); if (!el) return; if (el.type === 'checkbox' || el.type === 'radio') _intakeState[id] = el.checked ? (el.value || true) : false; else _intakeState[id] = el.value || ''; }); const ex = document.getElementById('q_chapter_existing'); if (ex && _intakeStep === 0) _intakeState.q_chapter_existing = ex.checked; }
+function getIntakeState(id, def) { return _intakeState[id] !== undefined ? _intakeState[id] : (def !== undefined ? def : ''); }
 
 const ORDER_CONTEXTS = ['Event','General / Ongoing Merch','Rush / Recruitment','Philanthropy','Formal / Social','Intramurals / Sports','Parent Weekend','Alumni'];
 
 function pgQuote() {
   _intakeStep = 0;
-  _intakeRefUrls = [];
+  _intakeRefUrls = []; _intakeClientRefUrls = []; _intakeRepRefUrls = [];
   const prefillId = window._quotePrefillChapterId || null;
   window._quotePrefillChapterId = null;
   mc('mainContent', `<div class="page">
-    <div class="page-header"><h1>New Quote / Order Intake</h1><p>Guided intake — complete all steps to submit to design</p></div>
+    <div class="page-header"><h1>New Order</h1><p>Guided intake — complete all steps to submit</p></div>
     <div id="quoteMsg" class="err" style="display:none"></div>
     <div id="quoteStepErrors" class="err" style="display:none;margin-bottom:12px"></div>
     <div class="wizard-steps" id="intakeWizardSteps"></div>
@@ -879,42 +925,54 @@ function renderIntakeWizardSteps() {
   el.innerHTML = INTAKE_STEPS.map((s, i) => `<div class="wizard-step ${i === _intakeStep ? 'active' : i < _intakeStep ? 'done' : ''}" onclick="setIntakeStep(${i})">${INTAKE_STEP_LABELS[i]}</div>`).join('');
 }
 
-function setIntakeStep(i) { _intakeStep = i; renderIntakeWizardSteps(); renderIntakeStep(null); updateIntakeButtons(); }
+function setIntakeStep(i) { syncIntakeStateFromDom(); _intakeStep = i; renderIntakeWizardSteps(); renderIntakeStep(null); updateIntakeButtons(); }
 
 function intakeValidation(step) {
   const missing = [];
   if (step === 0) {
     const existing = ($('q_chapter_existing') && $('q_chapter_existing').checked);
     if (existing) {
-      const chVal = $('q_chapter') && $('q_chapter').value;
+      const chVal = ($('q_chapter') && $('q_chapter').value) || getIntakeState('q_chapter');
       if (!chVal) missing.push('Select a chapter');
     } else {
-      if (!v('q_school')) missing.push('School');
-      if (!v('q_chapter_name')) missing.push('Chapter name');
-      if (!v('q_contact_name')) missing.push('Contact name');
-      if (!v('q_contact_phone')) missing.push('Contact phone');
+      const school = v('q_school') || getIntakeState('q_school');
+      const chName = v('q_chapter_name') || getIntakeState('q_chapter_name');
+      const contact = v('q_contact_name') || getIntakeState('q_contact_name');
+      const phone = v('q_contact_phone') || getIntakeState('q_contact_phone');
+      if (!school) missing.push('School');
+      if (!chName) missing.push('Chapter name');
+      if (!contact) missing.push('Contact name');
+      if (!phone) missing.push('Contact phone');
     }
   } else if (step === 1) {
-    if (!($('q_order_type') && $('q_order_type').value)) missing.push('Order type');
-    if (!($('q_order_context') && $('q_order_context').value)) missing.push('Order context');
-    const ctx = $('q_order_context') && $('q_order_context').value;
-    if (ctx === 'Event' && !v('q_event_date')) missing.push('Event date');
+    const ctx = ($('q_order_context') && $('q_order_context').value) || getIntakeState('q_order_context');
+    if (!ctx) missing.push('Order context');
   } else if (step === 2) {
-    const qtyMin = parseInt(v('q_qty_min'), 10); const qtyMax = parseInt(v('q_qty_max'), 10);
+    const qtyMin = parseInt(v('q_qty_min') || getIntakeState('q_qty_min'), 10);
+    const qtyMax = parseInt(v('q_qty_max') || getIntakeState('q_qty_max'), 10);
     if (!(qtyMin >= 1 && qtyMax >= qtyMin)) missing.push('Valid quantity range (min ≤ max)');
-    if (!v('q_colors')) missing.push('Garment colors');
-    if (!v('q_print_locations')) missing.push('Print locations');
+    const colors = v('q_colors') || getIntakeState('q_colors');
+    if (!colors) missing.push('Garment colors');
+    const locations = v('q_print_locations') || getIntakeState('q_print_locations');
+    if (!locations) missing.push('Print locations');
+    const garment = v('q_garment') || getIntakeState('q_garment');
+    if (!garment) missing.push('Garment type');
   } else if (step === 3) {
-    if (!v('q_design_direction') || v('q_design_direction').length < 20) missing.push('Design direction (2–3 sentences)');
-    if (!v('q_required_text')) missing.push('Required text');
-    const refs = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-    const hasRefs = refs.length > 0 || (_intakeRefUrls && _intakeRefUrls.length > 0);
-    if (!hasRefs) missing.push('Reference links or upload at least one image');
+    const dir = v('q_design_direction') || getIntakeState('q_design_direction');
+    if (!dir || dir.length < 10) missing.push('Design direction (be descriptive)');
+    const clientRefs = (v('q_ref_client_links') || getIntakeState('q_ref_client_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    const repRefs = (v('q_ref_rep_links') || getIntakeState('q_ref_rep_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+    const hasClient = clientRefs.length > 0 || (_intakeClientRefUrls && _intakeClientRefUrls.length > 0);
+    const hasRep = repRefs.length > 0 || (_intakeRepRefUrls && _intakeRepRefUrls.length > 0);
+    if (!hasClient && !hasRep) missing.push('At least one: Client reference images or Rep reference images');
   } else if (step === 4) {
-    if (!v('q_needed_by')) missing.push('Needed by date');
-    if (!($('q_delivery') && $('q_delivery').value)) missing.push('Delivery method');
+    const needed = v('q_needed_by') || getIntakeState('q_needed_by');
+    if (!needed) missing.push('Needed by date');
+    const delivery = $('q_delivery') && $('q_delivery').value;
+    if (!delivery) missing.push('Delivery method');
   } else if (step === 5) {
-    if (!v('q_invoice_email')) missing.push('Invoice email');
+    const email = v('q_invoice_email') || getIntakeState('q_invoice_email');
+    if (!email) missing.push('Invoice email');
   }
   return { ok: missing.length === 0, missing };
 }
@@ -932,74 +990,91 @@ function updateIntakeButtons() {
 function renderIntakeStep(prefillChapterId) {
   const content = $('intakeStepContent'); const actions = $('intakeActions'); if (!content) return;
   if (_intakeStep === 0) {
+    const existing = getIntakeState('q_chapter_existing');
+    const isExisting = existing === true || existing === 'true';
     content.innerHTML = `<div class="form-card">
       <div class="form-section"><div class="form-section-title">Is this an existing chapter we work with?</div>
       <div class="form-group" style="display:flex;gap:16px;margin-bottom:16px">
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_existing" onchange="toggleIntakeChapterForm()"> Existing</label>
-        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_new" onchange="toggleIntakeChapterForm()"> New</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_existing" onchange="toggleIntakeChapterForm()" ${isExisting ? 'checked' : ''}> Existing</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="radio" name="q_chapter_choice" id="q_chapter_new" onchange="toggleIntakeChapterForm()" ${!isExisting ? 'checked' : ''}> New</label>
       </div>
       <div id="q_existing_block" style="display:none">
         <div class="form-group"><label>Select chapter *</label><input type="text" class="form-input" id="q_chapter_search" placeholder="Search school or chapter..." oninput="filterChapterSelect()"><select class="form-select" id="q_chapter" style="margin-top:6px" onchange="onIntakeChapterSelect()"><option value="">— Select —</option></select></div>
       </div>
       <div id="q_new_block" style="display:none">
         <div class="form-section-title" style="margin-top:8px">Create New Chapter</div>
-        <div class="form-row"><div class="form-group"><label>School *</label><input class="form-input" id="q_school" placeholder="e.g. Ohio State"></div><div class="form-group"><label>Chapter name *</label><input class="form-input" id="q_chapter_name" placeholder="e.g. Alpha Phi"></div></div>
-        <div class="form-row"><div class="form-group"><label>Org type (optional)</label><input class="form-input" id="q_org_type" placeholder="Fraternity / Sorority"></div><div class="form-group"><label>Notes (optional)</label><input class="form-input" id="q_notes" placeholder=""></div></div>
+        <div class="form-row"><div class="form-group"><label>School *</label><input class="form-input" id="q_school" placeholder="e.g. Ohio State" value="${escapeHtml(getIntakeState('q_school'))}" oninput="updateIntakeButtons()"></div><div class="form-group"><label>Chapter name *</label><input class="form-input" id="q_chapter_name" placeholder="e.g. Alpha Phi" value="${escapeHtml(getIntakeState('q_chapter_name'))}" oninput="updateIntakeButtons()"></div></div>
+        <div class="form-row"><div class="form-group"><label>Org type (optional)</label><input class="form-input" id="q_org_type" placeholder="Fraternity / Sorority" value="${escapeHtml(getIntakeState('q_org_type'))}"></div><div class="form-group"><label>Notes (optional)</label><input class="form-input" id="q_notes" placeholder="" value="${escapeHtml(getIntakeState('q_notes'))}"></div></div>
         <div class="form-section-title" style="margin-top:16px">Primary contact</div>
-        <div class="form-group"><label>Contact name *</label><input class="form-input" id="q_contact_name" placeholder="Full name"></div>
-        <div class="form-row"><div class="form-group"><label>Contact phone *</label><input class="form-input" id="q_contact_phone" placeholder="Required"></div><div class="form-group"><label>Contact email (optional)</label><input class="form-input" id="q_contact_email" type="email"></div></div>
-        <div class="form-group"><label>Role / title (optional)</label><input class="form-input" id="q_contact_role" placeholder="e.g. Merch Chair"></div>
+        <div class="form-group"><label>Contact name *</label><input class="form-input" id="q_contact_name" placeholder="Full name" value="${escapeHtml(getIntakeState('q_contact_name'))}" oninput="updateIntakeButtons()"></div>
+        <div class="form-row"><div class="form-group"><label>Contact phone *</label><input class="form-input" id="q_contact_phone" placeholder="Required" value="${escapeHtml(getIntakeState('q_contact_phone'))}" oninput="updateIntakeButtons()"></div><div class="form-group"><label>Contact email (optional)</label><input class="form-input" id="q_contact_email" type="email" value="${escapeHtml(getIntakeState('q_contact_email'))}"></div></div>
+        <div class="form-group"><label>Role / title (optional)</label><input class="form-input" id="q_contact_role" placeholder="e.g. Merch Chair" value="${escapeHtml(getIntakeState('q_contact_role'))}"></div>
       </div>
       </div></div>`;
-    document.getElementById('q_chapter_new').checked = true; toggleIntakeChapterForm();
+    document.getElementById(isExisting ? 'q_chapter_existing' : 'q_chapter_new').checked = true;
+    toggleIntakeChapterForm();
     loadChapterSelect(prefillChapterId);
+    const chVal = getIntakeState('q_chapter');
+    if (chVal && document.getElementById('q_chapter')) document.getElementById('q_chapter').value = chVal;
   } else if (_intakeStep === 1) {
+    const ctxVal = getIntakeState('q_order_context');
+    const eventDateVal = getIntakeState('q_event_date');
     content.innerHTML = `<div class="form-card">
-      <div class="form-section"><div class="form-section-title">Order Type *</div>
-      <div class="form-group"><label>Order type *</label><select class="form-select" id="q_order_type"><option value="">— Select —</option><option value="quote">Quote</option><option value="order">Order</option></select></div>
-      <div class="form-section-title">Order Context *</div>
-      <div class="form-group"><label>Order context *</label><select class="form-select" id="q_order_context" onchange="toggleEventDateField()">${ORDER_CONTEXTS.map(x => `<option value="${escapeHtml(x)}">${escapeHtml(x)}</option>`).join('')}</select></div>
-      <div id="q_event_date_block" style="display:none" class="form-group"><label>Event date *</label><input class="form-input" id="q_event_date" type="date"></div>
-      <div class="form-group" id="q_event_subtype_block" style="display:none"><label>Event subtype</label><select class="form-select" id="q_event_subtype"><option value="formal">Formal</option><option value="recruitment">Recruitment</option><option value="philanthropy">Philanthropy</option><option value="other">Other</option></select></div>
+      <div class="form-section"><div class="form-section-title">Order Context *</div>
+      <div class="form-group"><label>Order context *</label><select class="form-select" id="q_order_context" onchange="toggleEventDateField();updateIntakeButtons()">${ORDER_CONTEXTS.map(x => `<option value="${escapeHtml(x)}" ${ctxVal === x ? 'selected' : ''}>${escapeHtml(x)}</option>`).join('')}</select></div>
+      <div id="q_event_date_block" style="display:none" class="form-group"><label>Event date (optional)</label><input class="form-input" id="q_event_date" type="date" value="${escapeHtml(eventDateVal)}" onchange="updateIntakeButtons()"></div>
       </div></div>`;
+    toggleEventDateField();
   } else if (_intakeStep === 2) {
     content.innerHTML = `<div class="form-card">
       <div class="form-section"><div class="form-section-title">Order Specs</div>
-      <div class="form-row"><div class="form-group"><label>Garment type *</label><select class="form-select" id="q_garment"><option value="tee">T-Shirt</option><option value="hoodie">Hoodie</option><option value="crewneck">Crewneck</option><option value="tank">Tank</option><option value="longsleeve">Long Sleeve</option><option value="polo">Polo</option><option value="hat">Hat</option><option value="other">Other</option></select></div><div class="form-group"><label>Fit *</label><select class="form-select" id="q_fit"><option value="standard">Standard</option><option value="oversized">Oversized</option><option value="heavyweight">Heavyweight</option></select></div></div>
-      <div class="form-group"><label>Pocket tee? (Print pocket?)</label><select class="form-select" id="q_pocket_tee"><option value="false">No</option><option value="true">Yes</option></select></div>
-      <div class="form-group"><label>Estimated qty range *</label><div class="form-row"><input class="form-input" id="q_qty_min" type="number" min="1" placeholder="Min"><input class="form-input" id="q_qty_max" type="number" min="1" placeholder="Max"></div></div>
-      <div class="form-group"><label>Garment colors (comma-separated) *</label><input class="form-input" id="q_colors" placeholder="e.g. Navy, White"></div>
-      <div class="form-group"><label>Print locations *</label><input class="form-input" id="q_print_locations" placeholder="e.g. front, back, sleeve"></div>
-      <div class="form-group"><label>Budget range (optional)</label><select class="form-select" id="q_budget_range"><option value="">— Optional —</option><option value="under_20">Under $20</option><option value="20_25">$20–25</option><option value="25_30">$25–30</option><option value="open">Open</option></select></div>
+      <div class="form-group"><label>Garment code (optional)</label><input type="text" class="form-input" id="q_garment_code" placeholder="e.g. G500" value="${escapeHtml(getIntakeState('q_garment_code'))}"></div>
+      <div class="form-row"><div class="form-group"><label>Garment type *</label><input type="text" class="form-input" id="q_garment" placeholder="e.g. T-Shirt, Hoodie, Crewneck" value="${escapeHtml(getIntakeState('q_garment'))}" oninput="updateIntakeButtons()"></div><div class="form-group"><label>Specific fit (optional)</label><input type="text" class="form-input" id="q_fit" placeholder="e.g. Standard, Oversized" value="${escapeHtml(getIntakeState('q_fit'))}"></div></div>
+      <div class="form-group"><label>Pocket tee? (Print pocket?)</label><select class="form-select" id="q_pocket_tee"><option value="false" ${getIntakeState('q_pocket_tee') === 'true' ? '' : 'selected'}>No</option><option value="true" ${getIntakeState('q_pocket_tee') === 'true' ? 'selected' : ''}>Yes</option></select></div>
+      <div class="form-group"><label>Estimated qty range *</label><div class="form-row"><input class="form-input" id="q_qty_min" type="number" min="1" placeholder="Min" value="${escapeHtml(getIntakeState('q_qty_min'))}" oninput="updateIntakeButtons()"><input class="form-input" id="q_qty_max" type="number" min="1" placeholder="Max" value="${escapeHtml(getIntakeState('q_qty_max'))}" oninput="updateIntakeButtons()"></div></div>
+      <div class="form-group"><label>Garment colors (comma-separated) *</label><input class="form-input" id="q_colors" placeholder="e.g. Navy, White" value="${escapeHtml(getIntakeState('q_colors'))}" oninput="updateIntakeButtons()"></div>
+      <div class="form-group"><label>Print locations *</label><input class="form-input" id="q_print_locations" placeholder="e.g. front, back, sleeve" value="${escapeHtml(getIntakeState('q_print_locations'))}" oninput="updateIntakeButtons()"></div>
+      <div class="form-group"><label>Budget range (optional)</label><select class="form-select" id="q_budget_range"><option value="">— Optional —</option><option value="under_20" ${getIntakeState('q_budget_range')==='under_20'?'selected':''}>Under $20</option><option value="20_25" ${getIntakeState('q_budget_range')==='20_25'?'selected':''}>$20–25</option><option value="25_30" ${getIntakeState('q_budget_range')==='25_30'?'selected':''}>$25–30</option><option value="open" ${getIntakeState('q_budget_range')==='open'?'selected':''}>Open</option></select></div>
       </div></div>`;
   } else if (_intakeStep === 3) {
     content.innerHTML = `<div class="form-card">
       <div class="form-section"><div class="form-section-title">Design Direction *</div>
-      <div class="form-group"><label>Design direction (2–3 sentences) *</label><textarea class="form-textarea" id="q_design_direction" placeholder="Describe the vibe, colors, placement..." oninput="updateIntakeButtons()"></textarea><span id="q_design_err" class="err" style="display:none;font-size:12px;margin-top:4px"></span></div>
-      <div class="form-group"><label>Required text *</label><input class="form-input" id="q_required_text" placeholder="Text that must appear" oninput="updateIntakeButtons()"></div>
-      <div class="form-group"><label>Reference links (one per line) OR upload images — at least one required</label><textarea class="form-textarea" id="q_ref_links" placeholder="https://..." style="min-height:60px" oninput="updateIntakeButtons()"></textarea></div>
-      <div class="form-group"><label>Upload reference images (PNG/JPG/PDF)</label><input type="file" class="form-input" id="q_ref_uploads" accept=".png,.jpg,.jpeg,.pdf" multiple onchange="onIntakeRefUpload()"><div id="q_ref_upload_list" style="font-size:12px;color:#6b7280;margin-top:6px"></div></div>
-      <div class="form-group"><label>Must-haves (optional)</label><textarea class="form-textarea" id="q_must_haves" style="min-height:60px"></textarea></div>
-      <div class="form-group"><label>Deal-breakers (optional)</label><textarea class="form-textarea" id="q_dealbreakers" style="min-height:60px"></textarea></div>
+      <div class="form-group"><label>Design direction *</label><textarea class="form-textarea" id="q_design_direction" placeholder="Be descriptive — describe the vibe, colors, placement, and any details that will help get the best design for the client" oninput="updateIntakeButtons()">${escapeHtml(getIntakeState('q_design_direction'))}</textarea><span id="q_design_err" class="err" style="display:none;font-size:12px;margin-top:4px"></span></div>
+      <div class="form-group"><label>Required text (optional)</label><input class="form-input" id="q_required_text" placeholder="Text that must appear on the design" value="${escapeHtml(getIntakeState('q_required_text'))}"></div>
+      <div class="form-group"><label>Client uploaded reference images — at least one of the two below required</label><textarea class="form-textarea" id="q_ref_client_links" placeholder="Paste links or paste image URLs (one per line)" style="min-height:50px" oninput="updateIntakeButtons()">${escapeHtml(getIntakeState('q_ref_client_links'))}</textarea></div>
+      <div class="form-group"><label>Upload client reference images (PNG/JPG/PDF)</label><input type="file" class="form-input" id="q_ref_client_uploads" accept=".png,.jpg,.jpeg,.pdf" multiple onchange="onIntakeClientRefUpload()"><div id="q_ref_client_list" style="font-size:12px;color:#6b7280;margin-top:6px"></div></div>
+      <div class="form-group"><label>Rep uploaded reference images</label><textarea class="form-textarea" id="q_ref_rep_links" placeholder="Links or references you found (one per line)" style="min-height:50px" oninput="updateIntakeButtons()">${escapeHtml(getIntakeState('q_ref_rep_links'))}</textarea></div>
+      <div class="form-group"><label>Upload rep reference images (PNG/JPG/PDF)</label><input type="file" class="form-input" id="q_ref_rep_uploads" accept=".png,.jpg,.jpeg,.pdf" multiple onchange="onIntakeRepRefUpload()"><div id="q_ref_rep_list" style="font-size:12px;color:#6b7280;margin-top:6px"></div></div>
+      <div class="form-group"><label>Must-haves (optional)</label><textarea class="form-textarea" id="q_must_haves" style="min-height:60px">${escapeHtml(getIntakeState('q_must_haves'))}</textarea></div>
+      <div class="form-group"><label>Deal-breakers (optional)</label><textarea class="form-textarea" id="q_dealbreakers" style="min-height:60px">${escapeHtml(getIntakeState('q_dealbreakers'))}</textarea></div>
       <button class="btn btn-green" id="btnSubmitToDesign" onclick="submitToDesignFromIntake()">Submit to Design</button>
       <p style="font-size:12px;color:#6b7280;margin-top:12px">After submitting to design you can continue to Timeline &amp; Invoice.</p>
       </div></div>`;
+    const clientList = $('q_ref_client_list'); if (clientList) clientList.textContent = (_intakeClientRefUrls && _intakeClientRefUrls.length) ? _intakeClientRefUrls.length + ' file(s) uploaded' : '';
+    const repList = $('q_ref_rep_list'); if (repList) repList.textContent = (_intakeRepRefUrls && _intakeRepRefUrls.length) ? _intakeRepRefUrls.length + ' file(s) uploaded' : '';
   } else if (_intakeStep === 4) {
     content.innerHTML = `<div class="form-card">
       <div class="form-section"><div class="form-section-title">Timeline &amp; Delivery *</div>
-      <div class="form-group"><label>Needed by date *</label><input class="form-input" id="q_needed_by" type="date" onchange="updateTimelineRisk();updateIntakeButtons()"></div>
+      <div class="form-group"><label>Needed by date *</label><input class="form-input" id="q_needed_by" type="date" value="${escapeHtml(getIntakeState('q_needed_by'))}" onchange="updateTimelineRisk();updateIntakeButtons()"></div>
       <div id="timelineRiskBanner"></div>
-      <div class="form-group"><label>Delivery method *</label><select class="form-select" id="q_delivery"><option value="ship">Ship</option><option value="pickup">Pickup</option><option value="vendor">Vendor</option></select></div>
-      <div class="form-group"><label>Internal timeline notes</label><input class="form-input" id="q_timeline_notes" placeholder="SLA estimate etc."></div>
+      <div class="form-group"><label>Delivery method *</label><select class="form-select" id="q_delivery" onchange="updateIntakeButtons()"><option value="ship" ${getIntakeState('q_delivery')==='ship'?'selected':''}>Ship</option><option value="pickup" ${getIntakeState('q_delivery')==='pickup'?'selected':''}>Pickup</option><option value="vendor" ${getIntakeState('q_delivery')==='vendor'?'selected':''}>Vendor</option></select></div>
+      <div class="form-group"><label>Shipping address — Zip code (for quote)</label><input class="form-input" id="q_ship_zip" placeholder="e.g. 43210" value="${escapeHtml(getIntakeState('q_ship_zip'))}"></div>
+      <div class="form-group"><label>Full shipping address (for order placement)</label><textarea class="form-textarea" id="q_ship_address" placeholder="Street, city, state zip" style="min-height:60px">${escapeHtml(getIntakeState('q_ship_address'))}</textarea></div>
+      <div class="form-group"><label>Internal timeline notes</label><input class="form-input" id="q_timeline_notes" placeholder="SLA estimate etc." value="${escapeHtml(getIntakeState('q_timeline_notes'))}"></div>
       </div></div>`;
   } else {
     const pc = window._intakePrimaryContact || {};
     content.innerHTML = `<div class="form-card">
       <div class="form-section"><div class="form-section-title">Invoice &amp; Contacts *</div>
-      <div class="form-group"><label>Invoice email *</label><input class="form-input" id="q_invoice_email" type="email" placeholder="billing@chapter.org" value="${escapeHtml(pc.email || '')}" oninput="updateIntakeButtons()"></div>
-      <div class="form-group"><label>Primary contact name</label><input class="form-input" id="q_contact_name" placeholder="Full name" value="${escapeHtml(pc.name || '')}"></div>
-      <div class="form-group"><label>Primary contact phone</label><input class="form-input" id="q_contact_phone" placeholder="Phone" value="${escapeHtml(pc.phone || '')}"></div>
+      <div class="form-group"><label>Invoice email *</label><input class="form-input" id="q_invoice_email" type="email" placeholder="billing@chapter.org" value="${escapeHtml(getIntakeState('q_invoice_email') || pc.email || '')}" oninput="updateIntakeButtons()"></div>
+      <div class="form-group"><label>Primary contact name</label><input class="form-input" id="q_invoice_contact_name" placeholder="Full name" value="${escapeHtml(getIntakeState('q_invoice_contact_name') || pc.name || '')}"></div>
+      <div class="form-group"><label>Primary contact phone</label><input class="form-input" id="q_invoice_contact_phone" placeholder="Phone" value="${escapeHtml(getIntakeState('q_invoice_contact_phone') || pc.phone || '')}"></div>
+      <div class="form-section-title" style="margin-top:16px">Pricing (set by admin after quote/fulfillment)</div>
+      <div class="form-group"><label>Price per shirt ($)</label><input class="form-input" id="q_price_per_shirt" type="number" step="0.01" min="0" placeholder="From fulfillment/quote" value="${escapeHtml(getIntakeState('q_price_per_shirt'))}" oninput="updateInvoiceTotal();updateIntakeButtons()"></div>
+      <div class="form-group"><label>Quantity &amp; size breakdown (e.g. S:10, M:20, L:15)</label><textarea class="form-textarea" id="q_size_breakdown" placeholder="One per line: Size, Quantity" style="min-height:80px" oninput="updateInvoiceTotal();updateIntakeButtons()">${escapeHtml(getIntakeState('q_size_breakdown'))}</textarea><div id="invoiceTotalDisplay" style="margin-top:8px;font-weight:600;color:#111827"></div></div>
+      <div class="info-box" style="margin-top:12px">Stripe invoicing: Once you configure Stripe API keys and webhook, you can send invoices directly from here. For now, use the total above for manual invoicing.</div>
       </div></div>`;
+    setTimeout(updateInvoiceTotal, 50);
   }
   const prev = _intakeStep > 0 ? `<button class="btn btn-ghost" onclick="setIntakeStep(${_intakeStep - 1})">← Back</button>` : '';
   const next = _intakeStep < INTAKE_STEPS.length - 1 ? `<button class="btn btn-blue" id="btnIntakeNext" onclick="setIntakeStep(${_intakeStep + 1})">Next →</button>` : '';
@@ -1011,6 +1086,22 @@ function renderIntakeStep(prefillChapterId) {
   setTimeout(updateIntakeButtons, 50);
 }
 
+function updateInvoiceTotal() {
+  const priceEl = $('q_price_per_shirt'); const breakdownEl = $('q_size_breakdown'); const out = $('invoiceTotalDisplay');
+  if (!out) return;
+  const price = parseFloat((priceEl && priceEl.value) || getIntakeState('q_price_per_shirt') || 0);
+  const text = (breakdownEl && breakdownEl.value) || getIntakeState('q_size_breakdown') || '';
+  let totalQty = 0;
+  text.split(/[\n,;]/).forEach(line => {
+    const t = line.trim(); if (!t) return;
+    const num = t.match(/(\d+)\s*$/); if (num) { totalQty += parseInt(num[1], 10); return; }
+    const num2 = t.match(/^[A-Za-z0-9]+[:\s]+(\d+)/i); if (num2) { totalQty += parseInt(num2[1], 10); return; }
+    const justNum = parseInt(t.replace(/\D/g, ''), 10); if (!isNaN(justNum)) totalQty += justNum;
+  });
+  const total = price * totalQty;
+  out.textContent = totalQty ? `Total: ${totalQty} units × $${price.toFixed(2)} = $${total.toFixed(2)}` : 'Enter price per shirt and size breakdown to see total.';
+}
+
 function toggleIntakeChapterForm() {
   const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
   const exBl = $('q_existing_block'); const newBl = $('q_new_block');
@@ -1020,11 +1111,10 @@ function toggleIntakeChapterForm() {
 }
 
 function toggleEventDateField() {
-  const ctx = $('q_order_context') && $('q_order_context').value;
+  const ctx = ($('q_order_context') && $('q_order_context').value) || getIntakeState('q_order_context');
   const isEvent = ctx === 'Event';
-  const bl = $('q_event_date_block'); const sub = $('q_event_subtype_block');
+  const bl = $('q_event_date_block');
   if (bl) bl.style.display = isEvent ? 'block' : 'none';
-  if (sub) sub.style.display = isEvent ? 'block' : 'none';
   updateIntakeButtons();
 }
 
@@ -1067,6 +1157,42 @@ async function onIntakeRefUpload() {
   input.value = '';
 }
 
+async function onIntakeClientRefUpload() {
+  const input = $('q_ref_client_uploads'); if (!input || !input.files || !input.files.length || !sb) return;
+  const orderId = _intakeDraftId; if (!orderId) { showErr($('quoteMsg'), 'Save draft first to upload files.'); return; }
+  const listEl = $('q_ref_client_list'); const msg = $('quoteMsg'); msg.style.display = 'none';
+  for (let i = 0; i < input.files.length; i++) {
+    const file = input.files[i]; const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['png','jpg','jpeg','pdf'].includes(ext)) { showErr(msg, 'Only PNG, JPG, PDF allowed.'); continue; }
+    const path = `orders/${orderId}/refs/client/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const { data, error } = await sb.storage.from('intake-assets').upload(path, file, { upsert: true });
+    if (error) { showErr(msg, 'Upload failed: ' + error.message); continue; }
+    const { data: urlData } = sb.storage.from('intake-assets').getPublicUrl(data.path);
+    _intakeClientRefUrls = _intakeClientRefUrls || []; _intakeClientRefUrls.push(urlData.publicUrl);
+  }
+  if (listEl) listEl.textContent = (_intakeClientRefUrls && _intakeClientRefUrls.length) ? _intakeClientRefUrls.length + ' file(s) uploaded' : '';
+  updateIntakeButtons();
+  input.value = '';
+}
+
+async function onIntakeRepRefUpload() {
+  const input = $('q_ref_rep_uploads'); if (!input || !input.files || !input.files.length || !sb) return;
+  const orderId = _intakeDraftId; if (!orderId) { showErr($('quoteMsg'), 'Save draft first to upload files.'); return; }
+  const listEl = $('q_ref_rep_list'); const msg = $('quoteMsg'); msg.style.display = 'none';
+  for (let i = 0; i < input.files.length; i++) {
+    const file = input.files[i]; const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (!['png','jpg','jpeg','pdf'].includes(ext)) { showErr(msg, 'Only PNG, JPG, PDF allowed.'); continue; }
+    const path = `orders/${orderId}/refs/rep/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+    const { data, error } = await sb.storage.from('intake-assets').upload(path, file, { upsert: true });
+    if (error) { showErr(msg, 'Upload failed: ' + error.message); continue; }
+    const { data: urlData } = sb.storage.from('intake-assets').getPublicUrl(data.path);
+    _intakeRepRefUrls = _intakeRepRefUrls || []; _intakeRepRefUrls.push(urlData.publicUrl);
+  }
+  if (listEl) listEl.textContent = (_intakeRepRefUrls && _intakeRepRefUrls.length) ? _intakeRepRefUrls.length + ' file(s) uploaded' : '';
+  updateIntakeButtons();
+  input.value = '';
+}
+
 function updateTimelineRisk() {
   const needed = v('q_needed_by'); const banner = $('timelineRiskBanner'); if (!banner) return;
   if (!needed) { banner.innerHTML = ''; return; }
@@ -1077,42 +1203,55 @@ function updateTimelineRisk() {
 }
 
 function intakePayload() {
-  const refLinks = (v('q_ref_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
-  const needed = v('q_needed_by');
+  const g = id => (document.getElementById(id) && document.getElementById(id).value) || getIntakeState(id) || '';
+  const sel = id => { const el = document.getElementById(id); return el ? el.value : getIntakeState(id); };
+  const refClientLinks = (g('q_ref_client_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  const refRepLinks = (g('q_ref_rep_links') || '').split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  const needed = g('q_needed_by');
   let timelineRisk = 'low';
   if (needed) { const days = Math.ceil((new Date(needed) - new Date()) / (24 * 60 * 60 * 1000)); if (days < 14) timelineRisk = 'high'; else if (days < 21) timelineRisk = 'medium'; }
-  const chapterId = ($('q_chapter') && $('q_chapter').value) || window._intakeDraftChapterId || null;
-  const orderContext = ($('q_order_context') && $('q_order_context').value) || null;
-  const eventDate = ($('q_order_context') && $('q_order_context').value === 'Event') ? v('q_event_date') : null;
+  const chapterId = sel('q_chapter') || window._intakeDraftChapterId || null;
+  const orderContext = sel('q_order_context') || null;
+  const eventDate = (orderContext === 'Event') ? g('q_event_date') : null;
   return {
     chapter_id: chapterId || null,
-    client_name: v('q_chapter_name') || v('q_school') || '—',
-    organization: v('q_school'),
-    event_type: ($('q_event_subtype') && $('q_event_subtype').value) || 'general',
-    event_date: eventDate || v('q_event_date') || null,
+    client_name: g('q_chapter_name') || g('q_school') || '—',
+    organization: g('q_school'),
+    event_type: 'general',
+    event_date: eventDate || null,
     order_context: orderContext,
-    event_subtype: ($('q_event_subtype') && $('q_event_subtype').value) || null,
-    pocket_tee: ($('q_pocket_tee') && $('q_pocket_tee').value) === 'true',
+    event_subtype: null,
+    pocket_tee: sel('q_pocket_tee') === 'true',
     needed_by_date: needed || null,
     timeline_date: needed,
-    delivery_method: ($('q_delivery') && $('q_delivery').value) || 'ship',
+    delivery_method: sel('q_delivery') || 'ship',
     timeline_risk_level: timelineRisk,
-    invoice_email: v('q_invoice_email'),
-    budget_range: ($('q_budget_range') && $('q_budget_range').value) || null,
-    estimated_qty_min: parseInt(v('q_qty_min'), 10) || null,
-    estimated_qty_max: parseInt(v('q_qty_max'), 10) || null,
-    quantity: parseInt(v('q_qty_max'), 10) || parseInt(v('q_qty_min'), 10) || null,
-    garment_type: ($('q_garment') && $('q_garment').value) || 'tee',
-    fit_type: ($('q_fit') && $('q_fit').value) || 'standard',
-    garment_colors: (v('q_colors') || '').split(',').map(s => s.trim()).filter(Boolean),
-    print_locations: (v('q_print_locations') || '').split(',').map(s => s.trim()).filter(Boolean),
-    design_direction: v('q_design_direction'),
-    required_text: v('q_required_text'),
-    must_haves: v('q_must_haves'),
-    dealbreakers: v('q_dealbreakers'),
-    reference_links: refLinks,
-    reference_images: _intakeRefUrls || [],
-    internal_notes: v('q_timeline_notes'),
+    invoice_email: g('q_invoice_email'),
+    budget_range: sel('q_budget_range') || null,
+    estimated_qty_min: parseInt(g('q_qty_min'), 10) || null,
+    estimated_qty_max: parseInt(g('q_qty_max'), 10) || null,
+    quantity: parseInt(g('q_qty_max'), 10) || parseInt(g('q_qty_min'), 10) || null,
+    garment_code: g('q_garment_code') || null,
+    garment_type: g('q_garment') || 'T-Shirt',
+    fit_type: g('q_fit') || null,
+    garment_colors: (g('q_colors') || '').split(',').map(s => s.trim()).filter(Boolean),
+    print_locations: (g('q_print_locations') || '').split(',').map(s => s.trim()).filter(Boolean),
+    design_direction: g('q_design_direction'),
+    required_text: g('q_required_text') || null,
+    must_haves: g('q_must_haves') || null,
+    dealbreakers: g('q_dealbreakers') || null,
+    reference_links: [...refClientLinks, ...refRepLinks],
+    reference_images: [...(_intakeClientRefUrls || []), ...(_intakeRepRefUrls || [])],
+    reference_client_links: refClientLinks,
+    reference_rep_links: refRepLinks,
+    reference_client_images: _intakeClientRefUrls || [],
+    reference_rep_images: _intakeRepRefUrls || [],
+    ship_zip: g('q_ship_zip') || null,
+    ship_address: g('q_ship_address') || null,
+    delivery_zip_code: g('q_ship_zip') || null,
+    price_per_shirt: parseFloat(g('q_price_per_shirt'), 10) || null,
+    size_breakdown: g('q_size_breakdown') || null,
+    internal_notes: g('q_timeline_notes') || null,
     created_by: CU.id,
     rep_id: CU.id,
     assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null),
@@ -1121,21 +1260,22 @@ function intakePayload() {
 }
 
 async function ensureIntakeChapterAndOrder() {
-  const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
-  let chapterId = ($('q_chapter') && $('q_chapter').value) || null;
+  const g = id => (document.getElementById(id) && document.getElementById(id).value) || getIntakeState(id) || '';
+  const existing = ($('q_chapter_existing') && $('q_chapter_existing').checked) || getIntakeState('q_chapter_existing') === true || getIntakeState('q_chapter_existing') === 'true';
+  let chapterId = ($('q_chapter') && $('q_chapter').value) || getIntakeState('q_chapter') || null;
   if (!existing) {
-    const school = v('q_school'); const chapterName = v('q_chapter_name');
+    const school = g('q_school'); const chapterName = g('q_chapter_name');
     if (!school || !chapterName) return { ok: false, error: 'School and chapter name required' };
     const { data: ch, error: chErr } = await sb.from('chapters').insert({
-      school, chapter_name: chapterName, org_type: v('q_org_type') || null, notes: v('q_notes') || null,
+      school, chapter_name: chapterName, org_type: g('q_org_type') || null, notes: g('q_notes') || null,
       assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null), status: 'active'
     }).select('id').single();
     if (chErr) return { ok: false, error: chErr.message };
     chapterId = ch.id;
     window._intakeDraftChapterId = ch.id;
-    const contactName = v('q_contact_name'); const contactPhone = v('q_contact_phone');
+    const contactName = g('q_contact_name'); const contactPhone = g('q_contact_phone');
     if (contactName || contactPhone) {
-      await sb.from('chapter_contacts').insert({ chapter_id: ch.id, name: contactName || '—', phone: contactPhone || null, email: v('q_contact_email') || null, role_title: v('q_contact_role') || null, is_primary: true });
+      await sb.from('chapter_contacts').insert({ chapter_id: ch.id, name: contactName || '—', phone: contactPhone || null, email: g('q_contact_email') || null, role_title: g('q_contact_role') || null, is_primary: true });
     }
   }
   let orderId = _intakeDraftId;
@@ -1159,13 +1299,14 @@ async function ensureIntakeChapterAndOrder() {
 
 async function saveIntakeDraft() {
   const msg = $('quoteMsg'); msg.style.display = 'none';
-  const existing = $('q_chapter_existing') && $('q_chapter_existing').checked;
-  let chapterId = ($('q_chapter') && $('q_chapter').value) || window._intakeDraftChapterId || null;
-  if (!_intakeDraftId && !existing && ($('q_school') && $('q_chapter_name'))) {
-    const school = v('q_school'); const chapterName = v('q_chapter_name');
+  const g = id => (document.getElementById(id) && document.getElementById(id).value) || getIntakeState(id) || '';
+  const existing = ($('q_chapter_existing') && $('q_chapter_existing').checked) || getIntakeState('q_chapter_existing') === true || getIntakeState('q_chapter_existing') === 'true';
+  let chapterId = ($('q_chapter') && $('q_chapter').value) || getIntakeState('q_chapter') || window._intakeDraftChapterId || null;
+  if (!_intakeDraftId && !existing && (g('q_school') && g('q_chapter_name'))) {
+    const school = g('q_school'); const chapterName = g('q_chapter_name');
     if (school && chapterName) {
       const { data: ch, error: chErr } = await sb.from('chapters').insert({
-        school, chapter_name: chapterName, org_type: v('q_org_type') || null, notes: v('q_notes') || null,
+        school, chapter_name: chapterName, org_type: g('q_org_type') || null, notes: g('q_notes') || null,
         assigned_sales_rep: (CP?.role === 'sales_rep' ? CU.id : null), status: 'active'
       }).select('id').single();
       if (!chErr && ch) { chapterId = ch.id; window._intakeDraftChapterId = ch.id; }
@@ -1213,8 +1354,13 @@ async function saveIntakeInvoiceAndFinish() {
   if (!v.ok) { const e = $('quoteStepErrors'); if (e) { e.textContent = 'Missing: ' + v.missing.join(', '); e.style.display = 'block'; } return; }
   if (!_intakeDraftId) { showErr(msg, 'Complete Design step first (Submit to Design).'); return; }
   const payload = intakePayload();
-  await sb.from('orders').update({ invoice_email: payload.invoice_email, updated_at: new Date().toISOString() }).eq('id', _intakeDraftId);
-  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Invoice contact saved.';
+  await sb.from('orders').update({
+    invoice_email: payload.invoice_email,
+    price_per_shirt: payload.price_per_shirt,
+    size_breakdown: payload.size_breakdown,
+    updated_at: new Date().toISOString()
+  }).eq('id', _intakeDraftId);
+  msg.className = 'suc'; msg.style.display = 'block'; msg.textContent = 'Invoice contact and pricing saved.';
   setTimeout(() => go('dashboard'), 1200);
 }
 
